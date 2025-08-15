@@ -1,0 +1,24 @@
+nav {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+}
+/* Navbar linkleri */
+nav a {
+  color: #e0fbfc;
+  text-decoration: none;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: color 0.3s ease;
+  background-color: #0077cc;
+  color: white;
+  box-shadow: 0 0 8px rgba(0, 119, 204, 0.3);
+  padding: 15px;
+}
+
+nav a:hover {
+  background-color: #0363a8;
+}

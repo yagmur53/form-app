@@ -1,0 +1,126 @@
+body {
+  margin: 0;
+  font-family: "Segoe UI", sans-serif;
+  background-color: #0d3a66;
+}
+
+.form-container {
+  max-width: 1200px;
+  margin: 60px auto;
+  padding: 40px;
+  background-color: #134674;
+  border-radius: 12px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+  color: white;
+}
+
+.form-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 24px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  font-size: 15px;
+  margin-bottom: 10px;
+  font-family: "Montserrat", sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.4px;
+}
+
+select,
+input {
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #12214b;
+  font-size: 15px;
+  color: #ccc;
+  background-color: #16295c;
+}
+
+input::placeholder {
+  color: #cbd5e1;
+}
+.form-section {
+  border: 1px solid #4c9aff;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 40px;
+  background-color: #0f4177;
+}
+select.invalid-select {
+  border: 2px solid #ff6b6b;
+  background-color: #ffecec;
+}
+
+.form-section legend {
+  font-size: 18px;
+  font-weight: bold;
+  padding: 0 10px;
+  color: #93c5fd;
+}
+input[type="number"] {
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #16295c;
+  font-size: 15px;
+  color: #fff;
+  background-color: 16295c;
+}
+.form-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 30px;
+  min-width: 1100px;
+}
+
+.submit-button {
+  background-color: #60a5fa;
+  color: #fff;
+  padding: 14px 28px;
+  font-size: 17px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.submit-button:hover {
+  background-color: #3b82f6;
+}
+.info-box {
+  margin: 1rem 0 1rem 0;
+
+  padding: 1rem;
+  background-color: #f0f8ff;
+  border-left: 4px solid #0077b6;
+  font-family: "Nata Sans", sans-serif;
+  border-radius: 6px;
+  color: #333;
+  animation: fadeIn 0.3s ease-in-out;
+}
+.info-box strong {
+  font-family: "Nata Sans", sans-serif;
+  text-transform: uppercase;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.form-multiselect {
+  height: auto;
+  min-height: 6rem;
+  padding: 0.5rem;
+}

@@ -1,0 +1,80 @@
+.my-select {
+  margin: 10px 0 10px 0;
+}
+
+.my-select__control {
+  padding: 3px !important;
+  border-radius: 8px !important;
+  border: 1px solid #12214b !important;
+  font-size: 15px !important;
+  color: #ccc !important;
+  background-color: #16295c !important;
+  box-shadow: none !important;
+  min-height: auto !important;
+}
+
+.my-select__control:hover {
+  border-color: #12214b !important;
+}
+
+.my-select__placeholder {
+  color: #ccc !important;
+}
+
+.my-select__input input {
+  color: #ccc !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.my-select__multi-value {
+  background-color: #1f3d80 !important;
+  border-radius: 4px !important;
+}
+
+.my-select__multi-value__label {
+  color: #fff !important;
+}
+
+.my-select__multi-value__remove {
+  color: #fff !important;
+}
+.my-select__multi-value__remove:hover {
+  background-color: #27468c !important;
+  color: white !important;
+}
+
+.my-select__menu {
+  background-color: #16295c !important;
+  border-radius: 8px !important;
+  margin-top: 4px !important;
+  z-index: 10 !important;
+}
+
+.my-select__option {
+  background-color: #16295c !important;
+  color: #ccc !important;
+  cursor: pointer !important;
+  padding: 5px !important;
+}
+.my-select__option--is-focused {
+  background-color: #1f3d80 !important;
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.info-box > div {
+  animation: fadeIn 0.5s ease-in-out;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  border-left: 3px solid #4caf50;
+  background-color: #f9f9f9;
+}
