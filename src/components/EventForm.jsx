@@ -64,7 +64,7 @@ const EventForm = () => {
 
     try {
       if (excelData && excelData.length > 0) {
-        await axios.post("http://localhost:5000/api/etkinlikler", {
+        await axios.post("https://backend-mg22.onrender.com/api/etkinlikler", {
           data: excelData,
           filename: "veriler.json",
           overwrite: false,
@@ -73,7 +73,7 @@ const EventForm = () => {
       }
 
       if (formData.ad.trim() !== "") {
-        await axios.post("http://localhost:5000/api/etkinlikler", {
+        await axios.post("https://backend-mg22.onrender.com/api/etkinlikler", {
           data: [formData],
           filename: "veriler.json",
           overwrite: false,

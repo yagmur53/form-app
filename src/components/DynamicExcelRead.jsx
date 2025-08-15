@@ -127,18 +127,21 @@ export default function DynamicExcelReader() {
       // Sheet'leri düzleştir
       const dataToSave = rawData.flatMap((sheet) => sheet.data);
 
-      const response = await fetch("http://localhost:5000/api/etkinlikler", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          filename: "veriler.json",
-          data: dataToSave,
-          overwrite: false,
-          mapping: headerMapping,
-        }),
-      });
+      const response = await fetch(
+        "https://backend-mg22.onrender.com/api/etkinlikler",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            filename: "veriler.json",
+            data: dataToSave,
+            overwrite: false,
+            mapping: headerMapping,
+          }),
+        }
+      );
 
       const result = await response.json();
 
