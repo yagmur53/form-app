@@ -12,12 +12,12 @@ function App() {
       <Header />
       <nav>
         <Link to="/">Form Girişi</Link>
-        <Link to="/excel-reader">Excel Okuma</Link>
+        <Link to="/veriler">Excel Okuma</Link>
       </nav>
 
       <Routes>
         <Route path="/" element={<EventForm />} />
-        <Route path="/excel-reader" element={<ExcelRead />} />
+        <Route path="/veriler" element={<ExcelRead />} />
       </Routes>
       <ToastContainer position="top-right" autoClose={3000} />
     </Router>
