@@ -485,7 +485,7 @@
 }
 
 /* Modal */
-.modal-overlay {
+.modal-overlays {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
@@ -496,7 +496,7 @@
   backdrop-filter: blur(4px);
 }
 
-.modal-content {
+.modal-contents {
   background: white;
   border-radius: 12px;
   padding: 24px;
@@ -518,20 +518,20 @@
   }
 }
 
-.modal-header {
+.modal-headers {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 20px;
 }
 
-.modal-title {
+.modal-titles {
   font-size: 18px;
   font-weight: 600;
   color: #1f2937;
 }
 
-.modal-close-button {
+.modal-close-buttons {
   background: none;
   border: none;
   color: #9ca3af;
