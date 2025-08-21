@@ -23,6 +23,7 @@ import "./components/styles/forms.css";
 import "./components/styles/filters.css";
 import "./components/styles/events.css";
 import "./components/styles/responsive.css";
+import "./components/styles/toast.css";
 
 function App() {
   const [isAuth, setIsAuth] = useState(false);

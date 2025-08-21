@@ -4,7 +4,6 @@ import {
   Upload,
   Download,
   Check,
-  Plus,
   X,
   Eye,
   EyeOff,
@@ -20,21 +19,12 @@ export default function DynamicExcelReader() {
   const [excelHeaders, setExcelHeaders] = useState([]);
   const [showMapping, setShowMapping] = useState(false);
   const [headerMapping, setHeaderMapping] = useState({});
-  const [customFields, setCustomFields] = useState({});
   const [mappedData, setMappedData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [viewMode, setViewMode] = useState("table");
   const [showMappedOnly, setShowMappedOnly] = useState(false);
-  const [showNewFieldModal, setShowNewFieldModal] = useState(false);
   const [notifications, setNotifications] = useState([]);
-  const [newFieldData, setNewFieldData] = useState({
-    excelHeader: "",
-    fieldName: "",
-    fieldKey: "",
-  });
   const [hasSelectedFile, setHasSelectedFile] = useState(false);
-  const TURKISH_REGEX = /[ğüşöçıİĞÜŞÖÇ]/g;
-  const turkishToastRef = useRef(false); // kısa süreli tekrar gösterimi engellemek için
 
   // Sabit veri tabanı alanları
   const dbFields = {
@@ -57,8 +47,6 @@ export default function DynamicExcelReader() {
     kalkinmaAraci: "Sürdürülebilir Kalkınma Amacı",
     url: "URL",
   };
-
-  // Toast benzeri notification sistemi
 
   // Otomatik eşleme fonksiyonu
   const autoMapHeaders = (headers) => {
@@ -300,43 +288,6 @@ export default function DynamicExcelReader() {
     reader.readAsArrayBuffer(file);
   };
 
-  // Yeni field ekleme
-  const addCustomField = (excelHeader) => {
-    setNewFieldData({
-      excelHeader,
-      fieldName: "",
-      fieldKey: "",
-    });
-    setShowNewFieldModal(true);
-  };
-
-  const createNewField = () => {
-    if (!newFieldData.fieldName.trim()) {
-      toast.error(
-        "Alan adı boş veya geçersiz. Lütfen İngilizce karakterler kullanın."
-      );
-      return;
-    }
-
-    const fieldKey = newFieldData.fieldKey;
-    const fieldLabel = newFieldData.fieldName.trim();
-
-    setCustomFields((prev) => ({
-      ...prev,
-      [fieldKey]: fieldLabel,
-    }));
-
-    setHeaderMapping((prev) => ({
-      ...prev,
-      [newFieldData.excelHeader]: fieldKey,
-    }));
-
-    toast.success(`✅ "${fieldLabel}" alanı başarıyla oluşturuldu!`);
-
-    setShowNewFieldModal(false);
-    setNewFieldData({ excelHeader: "", fieldName: "", fieldKey: "" });
-  };
-
   const updateMapping = (excelHeader, dbField) => {
     setHeaderMapping((prev) => ({
       ...prev,
@@ -349,42 +300,27 @@ export default function DynamicExcelReader() {
 
     setTimeout(() => {
       const mapped = jsonData.map((sheet) => {
-        const customFieldKeys = Object.keys(customFields);
-
         return {
           ...sheet,
           data: sheet.data.map((row) => {
             const mappedRow = { id: Date.now() + Math.random() };
-            const customFieldsObject = {};
-            const customFieldKeys = Object.keys(customFields);
 
+            // Önce eşleşen alanları ekle
             Object.keys(headerMapping).forEach((excelHeader) => {
               const dbField = headerMapping[excelHeader];
               const value = row[excelHeader];
 
               if (dbField && value !== undefined) {
-                if (customFieldKeys.includes(dbField)) {
-                  customFieldsObject[dbField] = value;
-                } else {
-                  mappedRow[dbField] = value;
-                }
+                mappedRow[dbField] = value;
               }
             });
 
-            if (Object.keys(customFieldsObject).length > 0) {
-              mappedRow.customFields = customFieldsObject;
-            }
-
-            const extraData = {};
+            // Sonra eşleşmeyen alanları Excel başlığı ile ekle
             excelHeaders.forEach((header) => {
               if (!headerMapping[header] && row[header] !== undefined) {
-                extraData[header] = row[header];
+                mappedRow[header] = row[header]; // Excel başlığını aynen kullan
               }
             });
-
-            if (Object.keys(extraData).length > 0) {
-              mappedRow.extraData = extraData;
-            }
 
             return mappedRow;
           }),
@@ -395,11 +331,6 @@ export default function DynamicExcelReader() {
       setIsLoading(false);
     }, 500);
   };
-
-  const getAllFields = () => ({
-    ...dbFields,
-    ...customFields,
-  });
 
   const getFilteredHeaders = () => {
     if (!showMappedOnly) return excelHeaders;
@@ -462,6 +393,7 @@ export default function DynamicExcelReader() {
       </div>
     );
   };
+
   const isMappingApplied = mappedData.length > 0;
 
   return (
@@ -535,8 +467,8 @@ export default function DynamicExcelReader() {
               <div className="auto-mapping-info">
                 <p>
                   <strong>{Object.keys(headerMapping).length}</strong> adet
-                  otomatik eşleme yapıldı! Eşlenmeyen alanlar için yeni field
-                  ekleyebilir veya mevcut alanlarla eşleyebilirsiniz.
+                  otomatik eşleme yapıldı! Eşlenmeyen alanlar Excel başlığı ile
+                  aynen kaydedilecek.
                 </p>
               </div>
 
@@ -544,7 +476,6 @@ export default function DynamicExcelReader() {
                 {getFilteredHeaders().map((header) => {
                   const isMapped = !!headerMapping[header];
                   const mappedField = headerMapping[header];
-                  const allFields = getAllFields();
 
                   return (
                     <div
@@ -562,21 +493,20 @@ export default function DynamicExcelReader() {
                         disabled={isLoading}
                         className={`mapping-select ${isMapped ? "mapped" : ""}`}
                       >
-                        <option value="">-- Eşleme Seç --</option>
-                        {Object.entries(allFields).map(([key, label]) => (
+                        <option value="">-- Excel başlığı ile kaydet --</option>
+                        {Object.entries(dbFields).map(([key, label]) => (
                           <option key={key} value={key}>
                             {label} ({key})
                           </option>
                         ))}
                       </select>
 
-                      <button
-                        onClick={() => addCustomField(header)}
-                        className="add-field-button"
-                      >
-                        <Plus size={16} />
-                        Yeni Alan Ekle
-                      </button>
+                      {!isMapped && (
+                        <div className="unmapped-info">
+                          📝 Bu alan "<strong>{header}</strong>" başlığı ile
+                          kaydedilecek
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -640,18 +570,28 @@ export default function DynamicExcelReader() {
             <div className="card-content">
               <h5>✅ Eşleme Özeti</h5>
               <div className="summary-grid">
-                {Object.entries(headerMapping).map(([excel, db]) => {
-                  const allFields = getAllFields();
-                  return (
-                    <div key={excel} className="summary-item">
-                      <span className="excel-name">{excel}</span>
+                {Object.entries(headerMapping).map(([excel, db]) => (
+                  <div key={excel} className="summary-item">
+                    <span className="excel-name">{excel}</span>
+                    <span className="arrow">→</span>
+                    <span className="db-name">
+                      {dbFields[db]} ({db})
+                    </span>
+                  </div>
+                ))}
+
+                {/* Eşleşmeyen alanları göster */}
+                {excelHeaders
+                  .filter((header) => !headerMapping[header])
+                  .map((header) => (
+                    <div key={header} className="summary-item unmapped">
+                      <span className="excel-name">{header}</span>
                       <span className="arrow">→</span>
                       <span className="db-name">
-                        {allFields[db]} ({db})
+                        Excel başlığı ile kaydedilecek
                       </span>
                     </div>
-                  );
-                })}
+                  ))}
               </div>
             </div>
           </div>
@@ -670,92 +610,6 @@ export default function DynamicExcelReader() {
           </div>
         )}
       </div>
-
-      {showNewFieldModal && (
-        <div className="modal-overlays">
-          <div className="modal-contents">
-            <div className="modal-headers">
-              <h3 className="modal-titles">Yeni Alan Ekle</h3>
-              <button
-                onClick={() => setShowNewFieldModal(false)}
-                className="modal-close-buttons"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="modal-form">
-              <div className="form-groups">
-                <label>Excel Başlığı:</label>
-                <div className="excel-header-display">
-                  "{newFieldData.excelHeader}"
-                </div>
-              </div>
-
-              <div className="form-groups">
-                <label>
-                  Yeni Alan Adı: <span className="required">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={newFieldData.fieldName}
-                  onChange={(e) => {
-                    const value = e.target.value;
-
-                    // Türkçe karakterleri temizle
-                    const cleaned = value.replace(TURKISH_REGEX, "");
-
-                    // Alan adı
-                    setNewFieldData((prev) => ({
-                      ...prev,
-                      fieldName: cleaned,
-                      fieldKey: cleaned
-                        .toLowerCase()
-                        .trim()
-                        .replace(/\s+/g, "_"), // boşlukları alt tire yap
-                    }));
-
-                    // Hata mesajı
-                    if (TURKISH_REGEX.test(value) && !turkishToastRef.current) {
-                      toast.error(
-                        "Türkçe karakter kullanılamaz. Lütfen İngilizce karakterler kullanın."
-                      );
-                      turkishToastRef.current = true;
-                      setTimeout(() => {
-                        turkishToastRef.current = false;
-                      }, 2000);
-                    }
-                  }}
-                  placeholder="Örn: Butce, Maliyet, Lokasyon (Türkçe karakter yok)"
-                  className="form-input"
-                  autoFocus
-                />
-              </div>
-
-              <div className="form-help">
-                💡 Bu alan veri tabanına "{newFieldData.fieldKey}" olarak
-                kaydedilecek
-              </div>
-            </div>
-
-            <div className="modal-actions">
-              <button
-                onClick={() => setShowNewFieldModal(false)}
-                className="modal-button secondary"
-              >
-                İptal
-              </button>
-              <button
-                onClick={createNewField}
-                disabled={!newFieldData.fieldName.trim()}
-                className="modal-button primary"
-              >
-                Alanı Ekle
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {isLoading && (
         <div className="loading-overlay">
