@@ -15,6 +15,7 @@
     "@mui/styled-engine": "^7.3.1",
     "@mui/x-date-pickers": "^8.10.0",
     "axios": "^1.11.0",
+    "dayjs": "^1.11.13",
     "lucide-react": "^0.539.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
