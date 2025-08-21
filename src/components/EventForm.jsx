@@ -5,10 +5,10 @@ import InputField from "./InputField";
 import SelectField from "./SelectField";
 import FormSection from "./FormSection";
 import Select from "react-select";
-import "./multiSelect.css";
+import "./styles/multiSelect.css";
 
 import React, { useState } from "react";
-import "./EventForm.css";
+import "./styles/EventForm.css";
 
 import FormProgressBar from "./FormProgressBar";
 
@@ -181,21 +181,22 @@ const EventForm = () => {
                 "Diğer Etkinlikler",
               ]}
             />
-
-            <label>Sürdürülebilir Kalkınma Amacı:</label>
-            <Select
-              className="my-select"
-              classNamePrefix="my-select"
-              isMulti
-              placeholder="Seçiniz"
-              options={kalkinmaOptions}
-              value={kalkinmaOptions.filter((opt) =>
-                kalkinmaSecim.includes(opt.value)
-              )}
-              onChange={(selectedOptions) =>
-                setKalkinmaSecim(selectedOptions.map((opt) => opt.value))
-              }
-            />
+            <div className="visibility-form-container">
+              <label>Sürdürülebilir Kalkınma Amacı:</label>
+              <Select
+                className="my-select"
+                classNamePrefix="my-select"
+                isMulti
+                placeholder="Seçiniz"
+                options={kalkinmaOptions}
+                value={kalkinmaOptions.filter((opt) =>
+                  kalkinmaSecim.includes(opt.value)
+                )}
+                onChange={(selectedOptions) =>
+                  setKalkinmaSecim(selectedOptions.map((opt) => opt.value))
+                }
+              />
+            </div>
 
             {kalkinmaSecim.length > 0 && (
               <div className="info-box">

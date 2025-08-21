@@ -1,6 +1,6 @@
 // FormProgressBar.jsx
 import React, { useEffect, useState } from "react";
-import "./formProgressBar.css";
+import "./styles/formProgressBar.css";
 
 const FormProgressBar = ({ fieldIds, kalkinmaSecim }) => {
   const [progress, setProgress] = useState(0);

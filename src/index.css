@@ -4,28 +4,3 @@
 body {
   background-color: #1d4468;
 }
-#main-header {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin: 50px auto;
-  padding: 20px;
-  width: 30%;
-}
-#main-title {
-  display: flex;
-  align-items: center;
-}
-#main-title img {
-  width: 5rem;
-  margin-right: 1.5rem;
-}
-h1 {
-  text-align: center;
-  text-transform: uppercase;
-  color: #f7f7f7;
-  text-shadow: 0 0 4px rgba(35, 34, 34, 0.4);
-  font-size: 2.5rem;
-  margin: 0;
-  -webkit-text-stroke: 0.2px #030000;
-}

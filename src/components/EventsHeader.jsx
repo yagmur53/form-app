@@ -6,7 +6,7 @@ export default function EventsHeader(props) {
     <header id="main-header">
       <div className="header-routes">
         <NavLink
-          to="/"
+          to="/admin"
           className={({ isActive }) =>
             isActive ? "nav-link active" : "nav-link"
           }
@@ -14,7 +14,7 @@ export default function EventsHeader(props) {
           Etkinlikler
         </NavLink>
         <NavLink
-          to="/grafik"
+          to="/admin/grafik"
           className={({ isActive }) =>
             isActive ? "nav-link active" : "nav-link"
           }

@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import "./modal.css";
+import "./styles/modal.css";
 import CloseBtn from "../assets/close.png";
 
 export default function Modal({ url, onClose }) {

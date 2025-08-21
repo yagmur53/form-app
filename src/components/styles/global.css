@@ -1,0 +1,46 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #1d4468;
+  margin: 0;
+  padding: 0;
+}
+
+#event {
+  width: 70%;
+  margin: 2rem auto;
+}
+
+.loading-spinner {
+  text-align: center;
+  padding: 2rem;
+  font-size: 2rem;
+  color: #ffffff;
+  font-family: "Montserrat", sans-serif;
+}
+
+.error-message {
+  color: red;
+  text-align: center;
+  margin-top: 1rem;
+}
+
+h3 {
+  color: #e2e2e2;
+  font-family: "Open Sans", sans-serif;
+  font-weight: 700;
+  font-size: 22px;
+  -webkit-text-stroke: 0.5px #030000;
+  margin: 0 0 0.6rem 0;
+}
+
+.ana-baslik {
+  font-family: "Open Sans", sans-serif !important;
+  font-weight: 600 !important;
+  font-size: 17px !important;
+  color: #00b4d8 !important;
+  letter-spacing: 0.5px !important;
+  -webkit-text-stroke: 0.2px #030000;
+}

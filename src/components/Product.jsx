@@ -6,7 +6,6 @@ import icon4 from "../assets/4.png";
 import icon5 from "../assets/all.png";
 import icon6 from "../assets/5.png";
 import { FaTimes } from "react-icons/fa";
-import "./events.css";
 
 export default function Product({
   id,

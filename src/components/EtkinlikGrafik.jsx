@@ -3,7 +3,7 @@ import axios from "axios";
 import Select from "react-select";
 import ChartComponent from "./ChartComponent";
 import EtkinlikListesi from "./EtkinlikListesi";
-import "./graphics.css";
+import "./styles/graphics.css";
 import ScrollToTop from "./scrollToTop";
 
 const options = [

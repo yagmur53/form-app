@@ -1,0 +1,119 @@
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes badgePulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+    opacity: 0.98;
+  }
+  30% {
+    transform: scale(1.04);
+    box-shadow: 0 8px 20px rgba(194, 6, 6, 0.28);
+    opacity: 1;
+  }
+  60% {
+    transform: scale(1.06);
+    box-shadow: 0 14px 34px rgba(194, 6, 6, 0.36);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+    opacity: 0.98;
+  }
+}
+
+@keyframes pulseGlow {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+}
+
+@keyframes badgeGlow {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  40% {
+    opacity: 0.9;
+    transform: translate(-50%, -50%) scale(1.18);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.35);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.5s ease;
+}
+
+.slide-in-up {
+  animation: slideInUp 0.4s ease;
+}
+
+/* Mobile özel animasyonlar */
+@media (max-width: 480px) {
+  .badge-new {
+    animation: pulseGlow 1.6s infinite ease-in-out;
+  }
+
+  .badge-new::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%) scale(1);
+    width: 120%;
+    height: 120%;
+    border-radius: 999px;
+    background: radial-gradient(
+      circle at center,
+      rgba(194, 6, 6, 0.28),
+      rgba(194, 6, 6, 0) 45%
+    );
+    opacity: 0;
+    pointer-events: none;
+    will-change: opacity, transform;
+    animation: badgeGlow 1.6s infinite cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}

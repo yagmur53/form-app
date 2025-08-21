@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
 import axios from "axios";
 import Select from "react-select";
-import "./events.css";
+import "./styles/events.css";
 import Product from "./Product.jsx";
 import { FaSearch } from "react-icons/fa";
 import Modal from "./Modal.jsx";
@@ -9,7 +9,7 @@ import DateFilter from "./DateFilter.jsx";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
-import "./product-select.css";
+import "./styles/product-select.css";
 import ScrollToTop from "./scrollToTop.jsx";
 
 export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {

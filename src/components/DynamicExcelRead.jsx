@@ -11,7 +11,8 @@ import {
   AlertCircle,
 } from "lucide-react";
 import * as XLSX from "xlsx";
-import "./excel-reader.css";
+import "./styles/excel-reader.css";
+import "./styles/new-modal.css";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -674,14 +675,14 @@ export default function DynamicExcelReader() {
       {showNewFieldModal && (
         <div className="modal-overlay">
           <div className="modal-content">
+            <button
+              onClick={() => setShowNewFieldModal(false)}
+              className="modal-close-button"
+            >
+              <X size={20} />
+            </button>
             <div className="modal-header">
               <h3 className="modal-title">Yeni Alan Ekle</h3>
-              <button
-                onClick={() => setShowNewFieldModal(false)}
-                className="modal-close-button"
-              >
-                <X size={20} />
-              </button>
             </div>
 
             <div className="modal-form">

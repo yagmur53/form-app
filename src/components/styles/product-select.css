@@ -15,7 +15,7 @@
   color: #fafafa !important ;
 }
 
-.my-select__control {
+.visibility-filter-container .my-select__control {
   min-height: 40px;
   border: 2px solid #e0e0e0 !important;
   border-radius: 8px;
@@ -23,23 +23,23 @@
   width: 50%;
 }
 
-.my-select__control--is-focused {
+.visibility-filter-container .my-select__control--is-focused {
   border-color: #007bff;
   box-shadow: 0 0 0 1px #007bff;
 }
 
-.my-select__multi-value {
+.visibility-filter-container .my-select__multi-value {
   background-color: #f8f9fa !important;
   border-radius: 10px !important;
   padding: 5px;
   margin: 3px !important;
 }
-.my-select__multi-value__label {
+.visibility-filter-container .my-select__multi-value__label {
   color: #495057 !important;
   font-size: 14px !important;
 }
 
-.my-select__multi-value__remove:hover {
+.visibility-filter-container .my-select__multi-value__remove:hover {
   background-color: #dc3545;
   color: white;
 }

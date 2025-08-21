@@ -1,16 +1,16 @@
 import EtkinlikListesi from "./EtkinlikListesi";
-import Header from "./Header";
 import EtkinlikGrafik from "./EtkinlikGrafik";
 import EventsHeader from "./EventsHeader.jsx";
-
-import { HashRouter as Router, Routes, Route } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 
 export default function EventApp() {
   return (
     <>
       <EventsHeader />
       <Routes>
+        {/* admin/events-app → Etkinlik listesi */}
         <Route path="/" element={<EtkinlikListesi />} />
+        {/* admin/events-app/grafik → Etkinlik grafik */}
         <Route path="/grafik" element={<EtkinlikGrafik />} />
       </Routes>
     </>
