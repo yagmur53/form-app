@@ -4,6 +4,7 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { HashRouter as Router, Routes, Route, Link } from "react-router-dom";
 import ExcelRead from "./components/DynamicExcelRead";
+import EventApp from "./components/EventApp"; // ✅ import ettik
 import "../src/components/routes.css";
 
 function App() {
@@ -13,12 +14,16 @@ function App() {
       <nav>
         <Link to="/">Form Girişi</Link>
         <Link to="/excel-reader">Excel Okuma</Link>
+        <Link to="/admin/events-app">Admin Paneli</Link>
       </nav>
 
       <Routes>
         <Route path="/" element={<EventForm />} />
         <Route path="/excel-reader" element={<ExcelRead />} />
+        <Route path="/admin/events-app" element={<EventApp />} />
+        {/* ✅ burası düzeldi */}
       </Routes>
+
       <ToastContainer position="top-right" autoClose={3000} />
     </Router>
   );

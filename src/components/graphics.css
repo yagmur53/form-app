@@ -1,0 +1,209 @@
+/* Genel Sayfa Stili ve Fontlar */
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap");
+
+/* YENİ: Scroll davranışını pürüzsüzleştirme ve üst boşluk ekleme */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 4rem; /* Scroll sonrası elemanın tepeye yapışmasını engeller */
+}
+
+/* Ana Kart Konteyneri */
+.chart-container-modern {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background-color: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+/* ... (Diğer CSS kodların aynı kalacak) ... */
+
+.chart-title {
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #12214b; /* Koyu mavi */
+  margin-bottom: 2rem;
+}
+
+.chart-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+.category-select {
+  flex: 1;
+  min-width: 300px;
+  font-size: 1rem;
+}
+
+.select__control {
+  border: 2px solid #dde2e7 !important;
+  border-radius: 8px !important;
+  padding: 0.5rem !important;
+  box-shadow: none !important;
+  transition: border-color 0.2s ease !important;
+}
+
+.select__control--is-focused {
+  border-color: #a3cef1 !important;
+}
+
+.select__placeholder {
+  color: #8894a7;
+}
+
+.chart-toggle-buttons {
+  display: flex;
+  background-color: #e9ecef;
+  border-radius: 8px;
+  padding: 4px;
+}
+
+.toggle-btn {
+  padding: 0.6rem 1.2rem;
+  border: none;
+  background-color: transparent;
+  color: #495057;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.toggle-btn.active {
+  background-color: #ffffff;
+  color: #12214b;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.chart-wrapper {
+  margin-top: 2rem;
+  min-height: 500px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.placeholder-message {
+  text-align: center;
+  color: #8894a7;
+  border: 2px dashed #dde2e7;
+  border-radius: 12px;
+  padding: 4rem;
+  width: 100%;
+}
+
+.placeholder-message h3 {
+  margin-top: 0;
+  font-size: 1.5rem;
+  color: #4a5a73;
+}
+
+.recharts-legend-item-text,
+.recharts-text,
+.recharts-cartesian-axis-tick-value {
+  font-family: "Poppins", sans-serif !important;
+  font-size: 13px !important;
+}
+
+.etkinlik-listesi-wrapper {
+  margin: 100px auto 50px;
+  padding: 2rem;
+  border-radius: 12px;
+  background-color: transparent;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* YENİ: Vurgu animasyonu */
+@keyframes highlight-fade {
+  0% {
+    box-shadow: 0 0 0 4px rgba(163, 206, 241, 0.7),
+      0 8px 30px rgba(0, 0, 0, 0.08);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(163, 206, 241, 0), 0 8px 30px rgba(0, 0, 0, 0.08);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.7s ease-out;
+}
+
+.highlight-on-load {
+  animation: fadeIn 0.7s ease-out, highlight-fade 1.8s ease-out;
+}
+
+/* YENİ: Liste başlığı ve temizleme butonu için stiller */
+.list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.list-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #0c1736;
+}
+
+.list-title span {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.clear-filter-btn {
+  background-color: #02a2d8;
+  border: 1px solid #02a2d8;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: "Poppins", sans-serif;
+}
+
+.clear-filter-btn:hover {
+  background-color: #113b79;
+  border-color: #113b79;
+}
+
+/* Mobil Cihazlar için Duyarlılık */
+@media (max-width: 768px) {
+  .chart-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .chart-title {
+    font-size: 1.5rem;
+  }
+  .chart-container-modern {
+    padding: 1.5rem;
+    margin: 1rem;
+  }
+  .list-header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+}
