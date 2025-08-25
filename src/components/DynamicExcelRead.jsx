@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 
 import {
   Upload,
@@ -25,6 +25,7 @@ export default function DynamicExcelReader() {
   const [showMappedOnly, setShowMappedOnly] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [hasSelectedFile, setHasSelectedFile] = useState(false);
+  const [dynamicDbFields, setDynamicDbFields] = useState({});
 
   // Sabit veri tabanı alanları
   const dbFields = {
@@ -48,6 +49,41 @@ export default function DynamicExcelReader() {
     url: "URL",
   };
 
+  // Backend'den mevcut başlıkları çek ve sabit başlıklarla birleştir
+  useEffect(() => {
+    const fetchExistingHeaders = async () => {
+      try {
+        const response = await fetch(
+          "https://backend-mg22.onrender.com/api/etkinlikler/headers"
+        );
+        const result = await response.json();
+
+        if (result.success && result.headers) {
+          // Sabit başlıklarla başla
+          const combinedFields = { ...dbFields };
+
+          // Backend'den gelen başlıkları ekle (sabit olanlarda yoksa)
+          result.headers.forEach((header) => {
+            if (!dbFields[header]) {
+              combinedFields[header] = header; // Key ve value aynı olacak
+            }
+          });
+
+          setDynamicDbFields(combinedFields);
+        } else {
+          // Backend'den veri gelmezse sadece sabit fields kullan
+          setDynamicDbFields(dbFields);
+        }
+      } catch (error) {
+        console.error("Başlıklar yüklenirken hata:", error);
+        // Hata durumunda sadece sabit fields kullan
+        setDynamicDbFields(dbFields);
+      }
+    };
+
+    fetchExistingHeaders();
+  }, []);
+
   // Otomatik eşleme fonksiyonu
   const autoMapHeaders = (headers) => {
     const autoMapping = {};
@@ -55,7 +91,7 @@ export default function DynamicExcelReader() {
     headers.forEach((excelHeader) => {
       const normalizedExcelHeader = excelHeader.toLowerCase().trim();
 
-      // Exact match kontrolü
+      // Exact match kontrolü - sabit dbFields ile
       Object.entries(dbFields).forEach(([dbKey, dbLabel]) => {
         const normalizedDbKey = dbKey.toLowerCase();
         const normalizedDbLabel = dbLabel.toLowerCase();
@@ -494,7 +530,7 @@ export default function DynamicExcelReader() {
                         className={`mapping-select ${isMapped ? "mapped" : ""}`}
                       >
                         <option value="">-- Excel başlığı ile kaydet --</option>
-                        {Object.entries(dbFields).map(([key, label]) => (
+                        {Object.entries(dynamicDbFields).map(([key, label]) => (
                           <option key={key} value={key}>
                             {label} ({key})
                           </option>
@@ -575,7 +611,7 @@ export default function DynamicExcelReader() {
                     <span className="excel-name">{excel}</span>
                     <span className="arrow">→</span>
                     <span className="db-name">
-                      {dbFields[db]} ({db})
+                      {dbFields[db] || db} ({db})
                     </span>
                   </div>
                 ))}
