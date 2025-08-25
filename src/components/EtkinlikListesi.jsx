@@ -315,7 +315,7 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
           {lastBatchId && (
             <div className="delete-batch-div">
               <button
-                className="delete-batch-button"
+                className="toggle-filter-button"
                 onClick={handleDeleteLastBatch}
               >
                 Son Yüklenen Veriyi Sil
