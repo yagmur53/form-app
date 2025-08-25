@@ -27,6 +27,9 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
   // Son yüklenen batchId
   const [lastBatchId, setLastBatchId] = useState(null);
 
+  // Dinamik başlıklar için yeni state
+  const [dynamicFields, setDynamicFields] = useState({});
+
   const grafikRef = useRef(null);
 
   // Görünürlük kontrolü
@@ -41,6 +44,7 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
     "kalkinmaAraci",
   ]);
 
+  // Sabit alanlar
   const staticFields = {
     ad: "Toplantının / Faaliyetin Adı",
     ulusal: "Ulusal / Uluslararası",
@@ -50,6 +54,7 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
     katilimci: "Yurt Dışından Katılımcı Sayısı",
     katilimTur: "Katılım Türü",
     kaliteKulturu: "Kalite Kültürünü Yaygınlaştırma Amacı",
+    faaliyetKulturu: "Faaliyet Kültürü",
     duzenleyenBirim: "Düzenleyen Birim",
     faaliyetYurutucusu: "Faaliyet Yürütücüsü",
     kariyerMerkezi: "Kariyer Merkezi Faaliyeti",
@@ -60,6 +65,45 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
     kalkinmaAraci: "Sürdürülebilir Kalkınma Amacı",
     url: "URL",
   };
+
+  // Backend'den mevcut başlıkları çek
+  useEffect(() => {
+    const fetchDynamicFields = async () => {
+      try {
+        const response = await axios.get(
+          "https://backend-mg22.onrender.com/api/etkinlikler/headers"
+        );
+
+        if (response.data.success && response.data.headers) {
+          // Sabit alanlarla başla
+          const combinedFields = { ...staticFields };
+
+          // Backend'den gelen başlıkları ekle (sabit olanlarda yoksa)
+          response.data.headers.forEach((header) => {
+            if (!staticFields[header]) {
+              // Dinamik başlıklar için güzel görünecek etiketler oluştur
+              const label = header
+                .replace(/([A-Z])/g, " $1")
+                .replace(/^./, (str) => str.toUpperCase())
+                .replace(/_/g, " ");
+              combinedFields[header] = label;
+            }
+          });
+
+          setDynamicFields(combinedFields);
+        } else {
+          // Backend'den veri gelmezse sadece sabit fields kullan
+          setDynamicFields(staticFields);
+        }
+      } catch (error) {
+        console.error("Dinamik başlıklar yüklenirken hata:", error);
+        // Hata durumunda sadece sabit fields kullan
+        setDynamicFields(staticFields);
+      }
+    };
+
+    fetchDynamicFields();
+  }, []);
 
   // === useEffect: Etkinlikleri ve son batchId'yi çek ===
   useEffect(() => {
@@ -115,7 +159,7 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
         )
         .then((res) => {
           alert(res.data.message);
-          // State’i güncelle
+          // State'i güncelle
           setEtkinlikler((prev) =>
             prev.filter((e) => e.batchId !== lastBatchId)
           );
@@ -127,6 +171,7 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
         });
     }
   };
+
   const handleDeleteProduct = (productId, productName) => {
     const confirmDelete = window.confirm(
       `Bu etkinliği silmek istediğinize emin misiniz?\nEtkinlik: ${productName}`
@@ -139,7 +184,7 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
         )
         .then((res) => {
           alert(res.data.message || `${productName} etkinliği silindi.`);
-          // State’i güncelle
+          // State'i güncelle
           setEtkinlikler((prev) => prev.filter((e) => e.id !== productId));
         })
         .catch((err) => {
@@ -149,17 +194,21 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
     }
   };
 
-  // Tüm alanları birleştir
+  // Tüm alanları birleştir (artık dinamik alanlar dahil)
   const allFields = useMemo(() => {
-    return { ...staticFields, ...customFieldMapping };
-  }, [customFieldMapping]);
+    return { ...dynamicFields, ...customFieldMapping };
+  }, [dynamicFields, customFieldMapping]);
 
   const fieldOptions = useMemo(
     () =>
       Object.entries(allFields).map(([key, label]) => ({
         value: key,
         label: `${label}`,
-        group: key.startsWith("custom_") ? "Özel Alanlar" : "Sabit Alanlar",
+        group: staticFields[key]
+          ? "Sabit Alanlar"
+          : key.startsWith("custom_")
+          ? "Özel Alanlar"
+          : "Dinamik Alanlar",
       })),
     [allFields]
   );
@@ -307,6 +356,10 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
                   onChange={handleVisibilityChange}
                   isSearchable
                   closeMenuOnSelect={false}
+                  menuPortalTarget={document.body}
+                  styles={{
+                    menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                  }}
                 />
               </div>
             </div>
@@ -343,6 +396,7 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
                 {...product}
                 visibleFields={visibleFields}
                 customFieldMapping={customFieldMapping}
+                dynamicFieldMapping={dynamicFields} // Yeni prop eklendi
                 customFields={product.customFields}
                 onDelete={() => handleDeleteProduct(product.id)}
               />

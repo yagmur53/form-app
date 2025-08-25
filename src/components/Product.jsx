@@ -29,6 +29,7 @@ export default function Product({
   yarisma,
   visibleFields = [],
   customFieldMapping = {},
+  dynamicFieldMapping = {}, // Yeni prop eklendi
   customFields,
   onDelete,
   ...customProps
@@ -150,8 +151,16 @@ export default function Product({
   };
 
   const getFieldLabel = (field) => {
+    // Önce sabit fieldLabels'dan kontrol et
     if (fieldLabels[field]) return fieldLabels[field];
+
+    // Sonra dinamik field mapping'den kontrol et
+    if (dynamicFieldMapping[field]) return dynamicFieldMapping[field];
+
+    // Sonra custom field mapping'den kontrol et
     if (customFieldMapping[field]) return customFieldMapping[field];
+
+    // Son olarak varsayılan formatla
     return field
       .replace(/([A-Z])/g, " $1")
       .replace(/^./, (str) => str.toUpperCase());
