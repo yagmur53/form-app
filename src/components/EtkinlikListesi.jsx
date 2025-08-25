@@ -127,6 +127,27 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
         });
     }
   };
+  const handleDeleteProduct = (productId, productName) => {
+    const confirmDelete = window.confirm(
+      `Bu etkinliği silmek istediğinize emin misiniz?\nEtkinlik: ${productName}`
+    );
+
+    if (confirmDelete) {
+      axios
+        .delete(
+          `https://backend-mg22.onrender.com/api/etkinlikler/${productId}`
+        )
+        .then((res) => {
+          alert(res.data.message || `${productName} etkinliği silindi.`);
+          // State’i güncelle
+          setEtkinlikler((prev) => prev.filter((e) => e.id !== productId));
+        })
+        .catch((err) => {
+          console.error(err);
+          alert("Silme işlemi başarısız oldu.");
+        });
+    }
+  };
 
   // Tüm alanları birleştir
   const allFields = useMemo(() => {
@@ -290,19 +311,18 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
               </div>
             </div>
           )}
-        </div>
 
-        {/* Son batch silme butonu */}
-        {lastBatchId && (
-          <div style={{ margin: "10px 0" }}>
-            <button
-              className="delete-batch-button"
-              onClick={handleDeleteLastBatch}
-            >
-              ⚠️ Son Yüklenen Veriyi Sil
-            </button>
-          </div>
-        )}
+          {lastBatchId && (
+            <div className="delete-batch-div">
+              <button
+                className="delete-batch-button"
+                onClick={handleDeleteLastBatch}
+              >
+                Son Yüklenen Veriyi Sil
+              </button>
+            </div>
+          )}
+        </div>
 
         {error && <div className="error-message">{error}</div>}
 
@@ -324,11 +344,7 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
                 visibleFields={visibleFields}
                 customFieldMapping={customFieldMapping}
                 customFields={product.customFields}
-                onDelete={() =>
-                  alert(
-                    "Bu etkinliği tek tek silmek için Product içindeki onDelete kullanılıyor"
-                  )
-                }
+                onDelete={() => handleDeleteProduct(product.id)}
               />
             </li>
           ))}
