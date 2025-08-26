@@ -9,10 +9,16 @@ import {
   EyeOff,
   AlertCircle,
 } from "lucide-react";
+
+import { Info } from "lucide-react";
+import { Tooltip } from "react-tooltip";
+import "react-tooltip/dist/react-tooltip.css";
+
 import * as XLSX from "xlsx";
 import "./styles/excel-reader.css";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import "./styles/upload-section.css";
 
 export default function DynamicExcelReader() {
   const [jsonData, setJsonData] = useState([]);
@@ -27,7 +33,6 @@ export default function DynamicExcelReader() {
   const [hasSelectedFile, setHasSelectedFile] = useState(false);
   const [dynamicDbFields, setDynamicDbFields] = useState({});
 
-  // Sabit veri tabanı alanları
   const dbFields = {
     id: "Toplantı / Faaliyet ID",
     ad: "Toplantının / Faaliyetin Adı",
@@ -48,8 +53,17 @@ export default function DynamicExcelReader() {
     kalkinmaAraci: "Sürdürülebilir Kalkınma Amacı",
     url: "URL",
   };
+  const cardInfos = {
+    upload:
+      "📂 Dosya Seç'e tıklayarak yüklemek istediğiniz Excel dosyasını yükleyiniz.",
+    mapping:
+      "📑 Excel başlıklarını veritabanındaki alanlarla eşleyiniz. Eşlenmeyenler Excel başlığıyla kaydedilir.",
+    preview:
+      "🔍 Yüklediğiniz verileri tablo veya JSON formatında önizleyebilirsiniz.",
+    summary: "📊 Yapılan tüm eşlemelerin özetini burada görebilirsiniz.",
+    save: "💾 Verilerinizi eşlemeyi uyguladıktan sonra veritabanına kaydedebilirsiniz.",
+  };
 
-  // Backend'den mevcut başlıkları çek ve sabit başlıklarla birleştir
   useEffect(() => {
     const fetchExistingHeaders = async () => {
       try {
@@ -59,24 +73,20 @@ export default function DynamicExcelReader() {
         const result = await response.json();
 
         if (result.success && result.headers) {
-          // Sabit başlıklarla başla
           const combinedFields = { ...dbFields };
 
-          // Backend'den gelen başlıkları ekle (sabit olanlarda yoksa)
           result.headers.forEach((header) => {
             if (!dbFields[header]) {
-              combinedFields[header] = header; // Key ve value aynı olacak
+              combinedFields[header] = header;
             }
           });
 
           setDynamicDbFields(combinedFields);
         } else {
-          // Backend'den veri gelmezse sadece sabit fields kullan
           setDynamicDbFields(dbFields);
         }
       } catch (error) {
         console.error("Başlıklar yüklenirken hata:", error);
-        // Hata durumunda sadece sabit fields kullan
         setDynamicDbFields(dbFields);
       }
     };
@@ -84,14 +94,12 @@ export default function DynamicExcelReader() {
     fetchExistingHeaders();
   }, []);
 
-  // Otomatik eşleme fonksiyonu
   const autoMapHeaders = (headers) => {
     const autoMapping = {};
 
     headers.forEach((excelHeader) => {
       const normalizedExcelHeader = excelHeader.toLowerCase().trim();
 
-      // Exact match kontrolü - sabit dbFields ile
       Object.entries(dbFields).forEach(([dbKey, dbLabel]) => {
         const normalizedDbKey = dbKey.toLowerCase();
         const normalizedDbLabel = dbLabel.toLowerCase();
@@ -106,7 +114,6 @@ export default function DynamicExcelReader() {
         }
       });
 
-      // Benzer kelimeler için fuzzy matching
       if (!autoMapping[excelHeader]) {
         const similarities = {
           name: "ad",
@@ -458,10 +465,29 @@ export default function DynamicExcelReader() {
       <div className="content-wrapper">
         <div className="card upload-section">
           <div className="card-content">
-            <h2>
+            <h2 className="flex items-center gap-3">
               <Upload size={24} />
               Excel Dosyası Yükle
+              <a
+                href="/ornek-excel.xlsx"
+                download="ornek-excel.xlsx"
+                className="sample-link"
+              >
+                📂 Örnek Excel Dosyası
+              </a>
             </h2>
+            {/* Sağ üst köşedeki Info ikonu */}
+            <span data-tooltip-id="upload-info" className="card-info-icon">
+              <Info size={18} />
+            </span>
+            <Tooltip
+              id="upload-info"
+              place="right"
+              className="custom-tooltip"
+              effect="solid"
+            >
+              {cardInfos.upload}
+            </Tooltip>
 
             <div className="upload-zone">
               <input
@@ -499,6 +525,18 @@ export default function DynamicExcelReader() {
                   {showMappedOnly ? "Tümünü Göster" : "Eşlenmeyenleri Göster"}
                 </button>
               </h3>
+              {/* Sağ üst köşe Info */}
+              <span data-tooltip-id="upload-info" className="card-info-icon">
+                <Info size={18} />
+              </span>
+              <Tooltip
+                id="upload-info"
+                place="right"
+                className="custom-tooltip"
+                effect="solid"
+              >
+                {cardInfos.mapping}
+              </Tooltip>
 
               <div className="auto-mapping-info">
                 <p>
@@ -585,6 +623,19 @@ export default function DynamicExcelReader() {
                   </button>
                 </div>
               </h4>
+
+              {/* Sağ üst köşe Info */}
+              <span data-tooltip-id="upload-info" className="card-info-icon">
+                <Info size={18} />
+              </span>
+              <Tooltip
+                id="upload-info"
+                place="right"
+                className="custom-tooltip"
+                effect="solid"
+              >
+                {cardInfos.preview}
+              </Tooltip>
 
               {viewMode === "table" ? (
                 renderTableView()

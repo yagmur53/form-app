@@ -1,0 +1,61 @@
+.sample-link {
+  font-size: 0.9rem;
+  background: #f0f4ff;
+  color: #2563eb;
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid #dbeafe;
+  text-decoration: none;
+  transition: all 0.25s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sample-link:hover {
+  background: #2563eb;
+  color: white;
+  border-color: #2563eb;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+}
+.card-content {
+  position: relative; /* Info ikonunu sağ üstte sabitlemek için */
+}
+#upload-info {
+  background-color: #1d4468;
+}
+.card-info-icon {
+  position: absolute;
+  top: 10px; /* yukarıdan boşluk */
+  right: 10px; /* sağdan boşluk */
+  cursor: pointer;
+  color: #3b82f6; /* Tailwind text-blue-500 rengi */
+  transition: color 0.2s ease-in-out;
+}
+
+.card-info-icon:hover {
+  color: #2563eb; /* hover'da biraz koyu mavi */
+}
+/* Tooltip genel stilleri */
+.custom-tooltip {
+  background: #1e293b; /* koyu lacivert (Tailwind slate-800) */
+  color: #f1f5f9; /* açık gri yazı */
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  max-width: 220px;
+  line-height: 1.4;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  opacity: 0.95;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Tooltip okunması daha kolay olsun diye arrow */
+.custom-tooltip[data-tooltip-place*="right"]::after {
+  border-right-color: #1e293b !important;
+}
+
+.custom-tooltip[data-tooltip-place*="left"]::after {
+  border-left-color: #1e293b !important;
+}
