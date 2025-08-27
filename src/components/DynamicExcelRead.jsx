@@ -20,7 +20,8 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "./styles/upload-section.css";
 
-export default function DynamicExcelReader() {
+export default function DynamicExcelReader({ onDataSaved }) {
+  // ✅ Callback prop eklendi
   const [jsonData, setJsonData] = useState([]);
   const [excelHeaders, setExcelHeaders] = useState([]);
   const [showMapping, setShowMapping] = useState(false);
@@ -53,6 +54,7 @@ export default function DynamicExcelReader() {
     kalkinmaAraci: "Sürdürülebilir Kalkınma Amacı",
     url: "URL",
   };
+
   const cardInfos = {
     upload:
       "📂 Dosya Seç'e tıklayarak yüklemek istediğiniz Excel dosyasını yükleyiniz.",
@@ -62,6 +64,22 @@ export default function DynamicExcelReader() {
       "🔍 Yüklediğiniz verileri tablo veya JSON formatında önizleyebilirsiniz.",
     summary: "📊 Yapılan tüm eşlemelerin özetini burada görebilirsiniz.",
     save: "💾 Verilerinizi eşlemeyi uyguladıktan sonra veritabanına kaydedebilirsiniz.",
+  };
+
+  // ✅ Eksik fonksiyon eklendi
+  const removeNotification = (notificationId) => {
+    setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
+  };
+
+  // ✅ Notification ekleme fonksiyonu
+  const addNotification = (message, type = "info") => {
+    const id = Date.now() + Math.random();
+    setNotifications((prev) => [...prev, { id, message, type }]);
+
+    // 5 saniye sonra otomatik kaldır
+    setTimeout(() => {
+      removeNotification(id);
+    }, 5000);
   };
 
   useEffect(() => {
@@ -149,13 +167,12 @@ export default function DynamicExcelReader() {
     setIsLoading(true);
     if (!isMappingApplied) {
       toast.error("Lütfen önce eşlemeyi uygulayın!");
+      setIsLoading(false);
       return;
     }
 
     try {
       const rawData = mappedData.length > 0 ? mappedData : jsonData;
-
-      // Sheet'leri düzleştir
       const dataToSave = rawData.flatMap((sheet) => sheet.data);
 
       const response = await fetch(
@@ -180,13 +197,32 @@ export default function DynamicExcelReader() {
         toast.success(
           `✅ Veri başarıyla kaydedildi! Kayıt sayısı: ${result.recordCount}`
         );
+
+        // ✅ State'i temizle ve parent'ı bilgilendir
+        setTimeout(() => {
+          // State'leri sıfırla
+          setJsonData([]);
+          setExcelHeaders([]);
+          setShowMapping(false);
+          setHeaderMapping({});
+          setMappedData([]);
+          setViewMode("table");
+          setShowMappedOnly(false);
+
+          // Parent bileşenin verilerini yenilemesini sağla
+          if (onDataSaved) {
+            onDataSaved();
+          }
+
+          // File input'u temizle
+          const fileInput = document.getElementById("fileInput");
+          if (fileInput) {
+            fileInput.value = "";
+          }
+        }, 2000);
       } else {
         toast.error(`❌ Hata: ${result.message}`);
       }
-
-      setTimeout(() => {
-        window.location.reload();
-      }, 2000);
     } catch (error) {
       console.error("Hata:", error);
       toast.error(`❌ Hata: ${error.message}`);
@@ -320,11 +356,13 @@ export default function DynamicExcelReader() {
         setIsLoading(false);
       } catch (error) {
         console.error("Excel okuma hatası:", error);
+        addNotification("Excel okuma hatası: " + error.message, "error");
         setIsLoading(false);
       }
     };
 
     reader.onerror = () => {
+      addNotification("Dosya okuma hatası", "error");
       setIsLoading(false);
     };
 
@@ -462,6 +500,7 @@ export default function DynamicExcelReader() {
         ))}
       </div>
 
+      {/* REST OF THE JSX REMAINS THE SAME... */}
       <div className="content-wrapper">
         <div className="card upload-section">
           <div className="card-content">
