@@ -171,7 +171,11 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
     }
   };
 
-  const handleDeleteProduct = (productId, productName) => {
+  const handleDeleteProduct = (productId) => {
+    // Product'ı bulup adını al
+    const product = etkinlikler.find((e) => e.id === productId);
+    const productName = product ? product.ad : "Bilinmeyen Etkinlik";
+
     const confirmDelete = window.confirm(
       `Bu etkinliği silmek istediğinize emin misiniz?\nEtkinlik: ${productName}`
     );
@@ -192,7 +196,6 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
         });
     }
   };
-
   // Tüm alanları birleştir (artık dinamik alanlar dahil)
   const allFields = useMemo(() => {
     return { ...dynamicFields, ...customFieldMapping };
@@ -397,7 +400,7 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
                 customFieldMapping={customFieldMapping}
                 dynamicFieldMapping={dynamicFields} // Yeni prop eklendi
                 customFields={product.customFields}
-                onDelete={() => handleDeleteProduct(product.id)}
+                onDelete={() => handleDeleteProduct(product.id, product.ad)}
               />
             </li>
           ))}
