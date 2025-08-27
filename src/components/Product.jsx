@@ -95,8 +95,7 @@ export default function Product({
       })()
     : "";
 
-  // ✅ Burada düzeltme yapıldı:
-  // Etkinliğin tüm alanlarını (custom + dinamik) yakalayıp allProps içine koyuyoruz
+  // ✅ DÜZELTME: Tüm alanları topla (sabit + dinamik + custom)
   const allProps = {
     id,
     ad,
@@ -117,18 +116,9 @@ export default function Product({
     dezavantajli,
     sektorIsbirligi,
     yarisma,
-    ...customFields,
-    ...customProps,
+    ...customFields, // customFields varsa ekle
+    ...customProps, // Excel'den gelen dinamik alanlar (Yer, Maaliyet vb.)
   };
-
-  // Eğer mapping’te var ama allProps’ta eksikse, ekle
-  Object.keys({ ...dynamicFieldMapping, ...customFieldMapping }).forEach(
-    (field) => {
-      if (!(field in allProps) && customProps[field] !== undefined) {
-        allProps[field] = customProps[field];
-      }
-    }
-  );
 
   const renderFieldValue = (field, value) => {
     if (value === null || value === undefined || value === "") return null;
@@ -162,9 +152,16 @@ export default function Product({
   };
 
   const getFieldLabel = (field) => {
+    // Önce sabit field labels'ı kontrol et
     if (fieldLabels[field]) return fieldLabels[field];
+
+    // Sonra dinamik field mapping'i kontrol et
     if (dynamicFieldMapping[field]) return dynamicFieldMapping[field];
+
+    // Son olarak custom field mapping'i kontrol et
     if (customFieldMapping[field]) return customFieldMapping[field];
+
+    // Hiçbiri yoksa field adından güzel bir başlık oluştur
     return field
       .replace(/([A-Z])/g, " $1")
       .replace(/^./, (str) => str.toUpperCase());
@@ -203,6 +200,7 @@ export default function Product({
           {visibleFields.map((field) => {
             if (field === "ad") return null;
 
+            // ✅ DÜZELTME: Değeri allProps'tan al
             const value = allProps[field];
             if (!value) return null;
 
