@@ -34,7 +34,7 @@ body {
   letter-spacing: 0.4px;
 }
 
-.form-fields select,
+.form-group select,
 input {
   padding: 12px;
   border-radius: 8px;

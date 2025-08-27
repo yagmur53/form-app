@@ -29,7 +29,7 @@ export default function Product({
   yarisma,
   visibleFields = [],
   customFieldMapping = {},
-  dynamicFieldMapping = {}, // Yeni prop eklendi
+  dynamicFieldMapping = {}, // Dinamik başlıklar buradan geliyor
   customFields,
   onDelete,
   ...customProps
@@ -95,6 +95,8 @@ export default function Product({
       })()
     : "";
 
+  // ✅ Burada düzeltme yapıldı:
+  // Etkinliğin tüm alanlarını (custom + dinamik) yakalayıp allProps içine koyuyoruz
   const allProps = {
     id,
     ad,
@@ -118,6 +120,15 @@ export default function Product({
     ...customFields,
     ...customProps,
   };
+
+  // Eğer mapping’te var ama allProps’ta eksikse, ekle
+  Object.keys({ ...dynamicFieldMapping, ...customFieldMapping }).forEach(
+    (field) => {
+      if (!(field in allProps) && customProps[field] !== undefined) {
+        allProps[field] = customProps[field];
+      }
+    }
+  );
 
   const renderFieldValue = (field, value) => {
     if (value === null || value === undefined || value === "") return null;
@@ -151,16 +162,9 @@ export default function Product({
   };
 
   const getFieldLabel = (field) => {
-    // Önce sabit fieldLabels'dan kontrol et
     if (fieldLabels[field]) return fieldLabels[field];
-
-    // Sonra dinamik field mapping'den kontrol et
     if (dynamicFieldMapping[field]) return dynamicFieldMapping[field];
-
-    // Sonra custom field mapping'den kontrol et
     if (customFieldMapping[field]) return customFieldMapping[field];
-
-    // Son olarak varsayılan formatla
     return field
       .replace(/([A-Z])/g, " $1")
       .replace(/^./, (str) => str.toUpperCase());
@@ -172,18 +176,9 @@ export default function Product({
 
   return (
     <article className="product" aria-labelledby={`product-${id}-title`}>
-      {/* Top controls: badge + delete button grouped to avoid overlap */}
       {(isNew || onDelete) && (
-        <div className="product-top-controls" aria-hidden={false}>
-          {isNew && (
-            <span
-              className="badge-new"
-              title="Yeni eklenen etkinlik"
-              aria-hidden="false"
-            >
-              YENİ
-            </span>
-          )}
+        <div className="product-top-controls">
+          {isNew && <span className="badge-new">YENİ</span>}
           {onDelete && (
             <button
               type="button"
@@ -192,8 +187,6 @@ export default function Product({
                 e.stopPropagation();
                 onDelete(id, e);
               }}
-              title="Etkinliği Sil"
-              aria-label="Etkinliği Sil"
             >
               <FaTimes />
             </button>
@@ -209,8 +202,10 @@ export default function Product({
 
           {visibleFields.map((field) => {
             if (field === "ad") return null;
+
             const value = allProps[field];
             if (!value) return null;
+
             const label = getFieldLabel(field);
             const icon = fieldIcons[field] || fieldIcons.default;
 
