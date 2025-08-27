@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from "react";
-import UploadSection from "./UploadSection";
-import MappingSection from "./MappingSection";
-import PreviewSection from "./PreviewSection";
-import SummarySection from "./SummarySection";
-import SaveSection from "./SaveSection";
-import Notification from "./Notification";
-import LoadingOverlay from "./LoadingOverlay";
+import UploadSection from "./DynamicExcelReader/UploadSection";
+import MappingSection from "./DynamicExcelReader/MappingSection";
+import PreviewSection from "./DynamicExcelReader/PreviewSection";
+import SummarySection from "./DynamicExcelReader/SummarySection";
+import SaveSection from "./DynamicExcelReader/SaveSection";
+import Notification from "./DynamicExcelReader/Notification";
+import LoadingOverlay from "./DynamicExcelReader/LoadingOverlay";
 
 import * as XLSX from "xlsx";
 import { toast } from "react-toastify";
+import "./styles/excel-reader.css";
+import "./styles/upload-section.css";
 
 export default function DynamicExcelReader({ onDataSaved }) {
   const [jsonData, setJsonData] = useState([]);
