@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
+
 import {
   Upload,
   Download,
@@ -8,26 +9,19 @@ import {
   EyeOff,
   AlertCircle,
 } from "lucide-react";
+
 import { Info } from "lucide-react";
 import { Tooltip } from "react-tooltip";
 import "react-tooltip/dist/react-tooltip.css";
+
 import * as XLSX from "xlsx";
-
-import NotificationList from "./NotificationList";
-import UploadSection from "./UploadSection";
-import MappingSection from "./MappingSection";
-import PreviewSection from "./PreviewSection";
-import SummarySection from "./SummarySection";
-import SaveSection from "./SaveSection";
-
-import { autoMapHeaders } from "../utils/excelUtils";
-
 import "./styles/excel-reader.css";
-import "./styles/upload-section.css";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import "./styles/upload-section.css";
 
 export default function DynamicExcelReader({ onDataSaved }) {
+  // ✅ Callback prop eklendi
   const [jsonData, setJsonData] = useState([]);
   const [excelHeaders, setExcelHeaders] = useState([]);
   const [showMapping, setShowMapping] = useState(false);
@@ -37,6 +31,7 @@ export default function DynamicExcelReader({ onDataSaved }) {
   const [viewMode, setViewMode] = useState("table");
   const [showMappedOnly, setShowMappedOnly] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const [hasSelectedFile, setHasSelectedFile] = useState(false);
   const [dynamicDbFields, setDynamicDbFields] = useState({});
 
   const dbFields = {
@@ -71,15 +66,17 @@ export default function DynamicExcelReader({ onDataSaved }) {
     save: "💾 Verilerinizi eşlemeyi uyguladıktan sonra veritabanına kaydedebilirsiniz.",
   };
 
-  // notifications helpers
+  // ✅ Eksik fonksiyon eklendi
   const removeNotification = (notificationId) => {
     setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
   };
 
+  // ✅ Notification ekleme fonksiyonu
   const addNotification = (message, type = "info") => {
     const id = Date.now() + Math.random();
     setNotifications((prev) => [...prev, { id, message, type }]);
 
+    // 5 saniye sonra otomatik kaldır
     setTimeout(() => {
       removeNotification(id);
     }, 5000);
@@ -115,12 +112,157 @@ export default function DynamicExcelReader({ onDataSaved }) {
     fetchExistingHeaders();
   }, []);
 
-  // Dosya okuma + header auto map
-  const handleFileUpload = (file) => {
+  const autoMapHeaders = (headers) => {
+    const autoMapping = {};
+
+    headers.forEach((excelHeader) => {
+      const normalizedExcelHeader = excelHeader.toLowerCase().trim();
+
+      Object.entries(dbFields).forEach(([dbKey, dbLabel]) => {
+        const normalizedDbKey = dbKey.toLowerCase();
+        const normalizedDbLabel = dbLabel.toLowerCase();
+
+        if (
+          normalizedExcelHeader === normalizedDbKey ||
+          normalizedExcelHeader === normalizedDbLabel ||
+          normalizedExcelHeader.includes(normalizedDbKey) ||
+          normalizedDbLabel.includes(normalizedExcelHeader)
+        ) {
+          autoMapping[excelHeader] = dbKey;
+        }
+      });
+
+      if (!autoMapping[excelHeader]) {
+        const similarities = {
+          name: "ad",
+          title: "ad",
+          başlık: "ad",
+          isim: "ad",
+          date: "baslama",
+          tarih: "baslama",
+          type: "tur",
+          tür: "tur",
+          participant: "katilimci",
+          katılımcı: "katilimci",
+          budget: "butce",
+          butçe: "butce",
+          cost: "butce",
+          maliyet: "butce",
+        };
+
+        Object.entries(similarities).forEach(([keyword, dbKey]) => {
+          if (normalizedExcelHeader.includes(keyword)) {
+            if (dbFields[dbKey]) {
+              autoMapping[excelHeader] = dbKey;
+            }
+          }
+        });
+      }
+    });
+
+    return autoMapping;
+  };
+
+  const saveToBackend = async () => {
+    setIsLoading(true);
+    if (!isMappingApplied) {
+      toast.error("Lütfen önce eşlemeyi uygulayın!");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const rawData = mappedData.length > 0 ? mappedData : jsonData;
+      const dataToSave = rawData.flatMap((sheet) => sheet.data);
+
+      const response = await fetch(
+        "https://backend-mg22.onrender.com/api/etkinlikler",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            filename: "veriler.json",
+            data: dataToSave,
+            overwrite: false,
+            mapping: headerMapping,
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success(
+          `✅ Veri başarıyla kaydedildi! Kayıt sayısı: ${result.recordCount}`
+        );
+
+        // ✅ State'i temizle ve parent'ı bilgilendir
+        setTimeout(() => {
+          // State'leri sıfırla
+          setJsonData([]);
+          setExcelHeaders([]);
+          setShowMapping(false);
+          setHeaderMapping({});
+          setMappedData([]);
+          setViewMode("table");
+          setShowMappedOnly(false);
+
+          // Parent bileşenin verilerini yenilemesini sağla
+          if (onDataSaved) {
+            onDataSaved();
+          }
+
+          // File input'u temizle
+          const fileInput = document.getElementById("fileInput");
+          if (fileInput) {
+            fileInput.value = "";
+          }
+        }, 2000);
+      } else {
+        toast.error(`❌ Hata: ${result.message}`);
+      }
+    } catch (error) {
+      console.error("Hata:", error);
+      toast.error(`❌ Hata: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
     if (!file) return;
+
     setIsLoading(true);
 
     const reader = new FileReader();
+
+    function excelDateToJSDate(serial) {
+      const utc_days = Math.floor(serial - 25569);
+      const utc_value = utc_days * 86400;
+      const date_info = new Date(utc_value * 1000);
+
+      const fractional_day = serial - Math.floor(serial) + 0.0000001;
+
+      let total_seconds = Math.floor(86400 * fractional_day);
+
+      const seconds = total_seconds % 60;
+      total_seconds -= seconds;
+
+      const hours = Math.floor(total_seconds / (60 * 60));
+      const minutes = Math.floor(total_seconds / 60) % 60;
+
+      return new Date(
+        date_info.getFullYear(),
+        date_info.getMonth(),
+        date_info.getDate(),
+        hours,
+        minutes,
+        seconds
+      );
+    }
 
     reader.onload = (event) => {
       try {
@@ -133,22 +275,22 @@ export default function DynamicExcelReader({ onDataSaved }) {
         workbook.SheetNames.forEach((sheetName) => {
           const worksheet = workbook.Sheets[sheetName];
 
-          const jsonDataArr = XLSX.utils.sheet_to_json(worksheet, {
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, {
             header: 1,
             defval: null,
             raw: false,
             dateNF: "yyyy-mm-dd",
           });
 
-          if (jsonDataArr.length === 0) return;
+          if (jsonData.length === 0) return;
 
-          const headers = jsonDataArr[0]
+          const headers = jsonData[0]
             .map((h) => (h ? h.toString().trim() : ""))
             .filter((h) => h);
 
           headers.forEach((h) => discoveredHeaders.add(h));
 
-          const dataRows = jsonDataArr
+          const dataRows = jsonData
             .slice(1)
             .map((row) => {
               const rowObject = {};
@@ -201,13 +343,13 @@ export default function DynamicExcelReader({ onDataSaved }) {
           }
         });
 
+        console.log("Excel verisi okundu:", allData);
+        console.log("Bulunan başlıklar:", Array.from(discoveredHeaders));
+
         setJsonData(allData);
         setExcelHeaders(Array.from(discoveredHeaders));
 
-        const autoMapping = autoMapHeaders(
-          Array.from(discoveredHeaders),
-          dbFields
-        );
+        const autoMapping = autoMapHeaders(Array.from(discoveredHeaders));
         setHeaderMapping(autoMapping);
 
         setShowMapping(true);
@@ -244,7 +386,7 @@ export default function DynamicExcelReader({ onDataSaved }) {
           data: sheet.data.map((row) => {
             const mappedRow = { id: Date.now() + Math.random() };
 
-            // önce eşleşen alanları ekle
+            // Önce eşleşen alanları ekle
             Object.keys(headerMapping).forEach((excelHeader) => {
               const dbField = headerMapping[excelHeader];
               const value = row[excelHeader];
@@ -254,7 +396,7 @@ export default function DynamicExcelReader({ onDataSaved }) {
               }
             });
 
-            // sonra eşleşmeyen alanları Excel başlığı ile ekle
+            // Sonra eşleşmeyen alanları Excel başlığı ile ekle
             excelHeaders.forEach((header) => {
               if (!headerMapping[header] && row[header] !== undefined) {
                 mappedRow[header] = row[header]; // Excel başlığını aynen kullan
@@ -271,132 +413,330 @@ export default function DynamicExcelReader({ onDataSaved }) {
     }, 500);
   };
 
-  const saveToBackend = async () => {
-    setIsLoading(true);
-    const isMappingApplied = mappedData.length > 0;
-    if (!isMappingApplied) {
-      toast.error("Lütfen önce eşlemeyi uygulayın!");
-      setIsLoading(false);
-      return;
-    }
+  const getFilteredHeaders = () => {
+    if (!showMappedOnly) return excelHeaders;
+    return excelHeaders.filter((header) => !headerMapping[header]);
+  };
 
-    try {
-      const rawData = mappedData.length > 0 ? mappedData : jsonData;
-      const dataToSave = rawData.flatMap((sheet) => sheet.data);
+  const renderTableView = () => {
+    const dataToShow = mappedData.length > 0 ? mappedData : jsonData;
+    if (!dataToShow.length) return null;
 
-      const response = await fetch(
-        "https://backend-mg22.onrender.com/api/etkinlikler",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            filename: "veriler.json",
-            data: dataToSave,
-            overwrite: false,
-            mapping: headerMapping,
-          }),
-        }
-      );
+    const firstSheet = dataToShow[0];
+    const sampleData = firstSheet.data.slice(0, 10);
 
-      const result = await response.json();
+    if (!sampleData.length) return <p>Gösterilecek veri yok</p>;
 
-      if (result.success) {
-        toast.success(
-          `✅ Veri başarıyla kaydedildi! Kayıt sayısı: ${result.recordCount}`
-        );
+    const allColumns = Object.keys(sampleData[0] || {});
 
-        setTimeout(() => {
-          setJsonData([]);
-          setExcelHeaders([]);
-          setShowMapping(false);
-          setHeaderMapping({});
-          setMappedData([]);
-          setViewMode("table");
-          setShowMappedOnly(false);
+    return (
+      <div className="preview-wrapper">
+        <div className="table-info-header">
+          <span>
+            📋 <strong>{firstSheet.sheetName}</strong> | Toplam:{" "}
+            <strong>{firstSheet.data.length}</strong> satır | Gösterilen:{" "}
+            <strong>{sampleData.length}</strong> satır
+          </span>
+        </div>
 
-          if (onDataSaved) {
-            onDataSaved();
-          }
+        <div className="table-wrapper">
+          <table className="preview-table">
+            <thead>
+              <tr>
+                {allColumns.map((column, index) => (
+                  <th key={index}>{column}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {sampleData.map((row, rowIndex) => (
+                <tr key={rowIndex}>
+                  {allColumns.map((column, colIndex) => (
+                    <td key={colIndex}>
+                      {row[column] !== null && row[column] !== undefined
+                        ? typeof row[column] === "object"
+                          ? JSON.stringify(row[column])
+                          : String(row[column])
+                        : "-"}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
-          const fileInput = document.getElementById("fileInput");
-          if (fileInput) {
-            fileInput.value = "";
-          }
-        }, 2000);
-      } else {
-        toast.error(`❌ Hata: ${result.message}`);
-      }
-    } catch (error) {
-      console.error("Hata:", error);
-      toast.error(`❌ Hata: ${error.message}`);
-    } finally {
-      setIsLoading(false);
-    }
+        {firstSheet.data.length > 10 && (
+          <div className="table-footer">
+            ... ve {firstSheet.data.length - 10} satır daha
+          </div>
+        )}
+      </div>
+    );
   };
 
   const isMappingApplied = mappedData.length > 0;
 
   return (
     <div className="dynamic-excel-container">
-      <NotificationList
-        notifications={notifications}
-        removeNotification={removeNotification}
-      />
+      <div className="notification-container">
+        {notifications.map((notification) => (
+          <div
+            key={notification.id}
+            className={`notification notification-${notification.type}`}
+          >
+            <div className="notification-content">
+              {notification.type === "error" && <AlertCircle size={18} />}
+              {notification.type === "success" && <Check size={18} />}
+              <span>{notification.message}</span>
+            </div>
+            <button
+              onClick={() => removeNotification(notification.id)}
+              className="notification-close"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        ))}
+      </div>
 
+      {/* REST OF THE JSX REMAINS THE SAME... */}
       <div className="content-wrapper">
-        <UploadSection
-          handleFileUpload={handleFileUpload}
-          isLoading={isLoading}
-          cardInfos={cardInfos}
-        />
+        <div className="card upload-section">
+          <div className="card-content">
+            <h2 className="flex items-center gap-3">
+              <Upload size={24} />
+              Excel Dosyası Yükle
+              <a
+                href="/ornek-excel.xlsx"
+                download="ornek-excel.xlsx"
+                className="sample-link"
+              >
+                📂 Örnek Excel Dosyası
+              </a>
+            </h2>
+            {/* Sağ üst köşedeki Info ikonu */}
+            <span data-tooltip-id="upload-info" className="card-info-icon">
+              <Info size={18} />
+            </span>
+            <Tooltip
+              id="upload-info"
+              place="right"
+              className="custom-tooltip"
+              effect="solid"
+            >
+              {cardInfos.upload}
+            </Tooltip>
+
+            <div className="upload-zone">
+              <input
+                type="file"
+                onChange={handleFileUpload}
+                accept=".xlsx,.xls"
+                disabled={isLoading}
+                className="upload-input"
+                id="fileInput"
+              />
+              <label
+                htmlFor="fileInput"
+                className={`upload-button ${isLoading ? "disabled" : ""}`}
+              >
+                {isLoading ? "Yükleniyor..." : "Dosya Seç"}
+              </label>
+            </div>
+          </div>
+        </div>
 
         {showMapping && (
-          <MappingSection
-            excelHeaders={excelHeaders}
-            headerMapping={headerMapping}
-            updateMapping={updateMapping}
-            dynamicDbFields={dynamicDbFields}
-            applyMapping={applyMapping}
-            isLoading={isLoading}
-            showMappedOnly={showMappedOnly}
-            setShowMappedOnly={setShowMappedOnly}
-            cardInfos={cardInfos}
-          />
+          <div className="card mapping-section fade-in">
+            <div className="card-content">
+              <h3>
+                <div className="title-part">
+                  <Check size={24} />
+                  Başlık Eşleme
+                </div>
+
+                <button
+                  onClick={() => setShowMappedOnly(!showMappedOnly)}
+                  className={`filter-button ${showMappedOnly ? "active" : ""}`}
+                >
+                  {showMappedOnly ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {showMappedOnly ? "Tümünü Göster" : "Eşlenmeyenleri Göster"}
+                </button>
+              </h3>
+              {/* Sağ üst köşe Info */}
+              <span data-tooltip-id="upload-info" className="card-info-icon">
+                <Info size={18} />
+              </span>
+              <Tooltip
+                id="upload-info"
+                place="right"
+                className="custom-tooltip"
+                effect="solid"
+              >
+                {cardInfos.mapping}
+              </Tooltip>
+
+              <div className="auto-mapping-info">
+                <p>
+                  <strong>{Object.keys(headerMapping).length}</strong> adet
+                  otomatik eşleme yapıldı! Eşlenmeyen alanlar Excel başlığı ile
+                  aynen kaydedilecek.
+                </p>
+              </div>
+
+              <div className="mapping-grid">
+                {getFilteredHeaders().map((header) => {
+                  const isMapped = !!headerMapping[header];
+                  const mappedField = headerMapping[header];
+
+                  return (
+                    <div
+                      key={header}
+                      className={`mapping-item ${isMapped ? "mapped" : ""}`}
+                    >
+                      <div className="mapping-item-header">
+                        <span className="excel-header-name">📋 {header}</span>
+                        {isMapped && <Check size={16} />}
+                      </div>
+
+                      <select
+                        value={mappedField || ""}
+                        onChange={(e) => updateMapping(header, e.target.value)}
+                        disabled={isLoading}
+                        className={`mapping-select ${isMapped ? "mapped" : ""}`}
+                      >
+                        <option value="">-- Excel başlığı ile kaydet --</option>
+                        {Object.entries(dynamicDbFields).map(([key, label]) => (
+                          <option key={key} value={key}>
+                            {label} ({key})
+                          </option>
+                        ))}
+                      </select>
+
+                      {!isMapped && (
+                        <div className="unmapped-info">
+                          📝 Bu alan "<strong>{header}</strong>" başlığı ile
+                          kaydedilecek
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="apply-mapping-container">
+                <button
+                  onClick={applyMapping}
+                  disabled={isLoading}
+                  className="apply-mapping-button"
+                >
+                  {isLoading ? "Uygulanıyor..." : "🔄 Eşlemeyi Uygula"}
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
         {(jsonData.length > 0 || mappedData.length > 0) && (
-          <PreviewSection
-            mappedData={mappedData}
-            jsonData={jsonData}
-            viewMode={viewMode}
-            setViewMode={setViewMode}
-            cardInfos={cardInfos}
-          />
+          <div className="card preview-section fade-in">
+            <div className="card-content">
+              <h4>
+                Veri Önizleme
+                <div className="view-mode-buttons">
+                  <button
+                    onClick={() => setViewMode("table")}
+                    className={`view-mode-button ${
+                      viewMode === "table" ? "active" : ""
+                    }`}
+                  >
+                    🗂️ Tablo
+                  </button>
+                  <button
+                    onClick={() => setViewMode("json")}
+                    className={`view-mode-button ${
+                      viewMode === "json" ? "active" : ""
+                    }`}
+                  >
+                    📝 JSON
+                  </button>
+                </div>
+              </h4>
+
+              {/* Sağ üst köşe Info */}
+              <span data-tooltip-id="upload-info" className="card-info-icon">
+                <Info size={18} />
+              </span>
+              <Tooltip
+                id="upload-info"
+                place="right"
+                className="custom-tooltip"
+                effect="solid"
+              >
+                {cardInfos.preview}
+              </Tooltip>
+
+              {viewMode === "table" ? (
+                renderTableView()
+              ) : (
+                <pre className="json-preview">
+                  {JSON.stringify(
+                    mappedData.length > 0 ? mappedData : jsonData,
+                    null,
+                    2
+                  )}
+                </pre>
+              )}
+            </div>
+          </div>
         )}
 
         {mappedData.length > 0 && (
-          <SummarySection
-            headerMapping={headerMapping}
-            excelHeaders={excelHeaders}
-            dbFields={dbFields}
-          />
+          <div className="card summary-section fade-in">
+            <div className="card-content">
+              <h5>✅ Eşleme Özeti</h5>
+              <div className="summary-grid">
+                {Object.entries(headerMapping).map(([excel, db]) => (
+                  <div key={excel} className="summary-item">
+                    <span className="excel-name">{excel}</span>
+                    <span className="arrow">→</span>
+                    <span className="db-name">
+                      {dbFields[db] || db} ({db})
+                    </span>
+                  </div>
+                ))}
+
+                {/* Eşleşmeyen alanları göster */}
+                {excelHeaders
+                  .filter((header) => !headerMapping[header])
+                  .map((header) => (
+                    <div key={header} className="summary-item unmapped">
+                      <span className="excel-name">{header}</span>
+                      <span className="arrow">→</span>
+                      <span className="db-name">
+                        Excel başlığı ile kaydedilecek
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          </div>
         )}
 
         {(jsonData.length > 0 || mappedData.length > 0) && (
-          <SaveSection
-            saveToBackend={saveToBackend}
-            isLoading={isLoading}
-            isMappingApplied={isMappingApplied}
-            cardInfos={cardInfos}
-          />
+          <div className="save-section">
+            <button
+              onClick={saveToBackend}
+              disabled={isLoading || !isMappingApplied}
+              className={`save-button ${!isMappingApplied ? "disabled" : ""}`}
+            >
+              <Download size={20} />
+              {isLoading ? "Kaydediliyor..." : "Veri Tabanına Kaydet"}
+            </button>
+          </div>
         )}
       </div>
 
-      <Tooltip id="upload-info" />
-
-      <ToastContainer position="top-right" autoClose={4000} />
       {isLoading && (
         <div className="loading-overlay">
           <div className="loading-content">
