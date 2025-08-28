@@ -1,83 +1,112 @@
-import { Check, Eye, EyeOff, Info } from "lucide-react";
+import React from "react";
+import { Check, EyeOff, Eye, Info } from "lucide-react";
 import { Tooltip } from "react-tooltip";
 
-export default function MappingSection({
-  excelHeaders,
-  headerMapping,
-  setHeaderMapping,
-  applyMapping,
+const MappingSection = ({
+  showMapping,
   showMappedOnly,
   setShowMappedOnly,
-  dbFields,
+  headerMapping,
+  excelHeaders,
+  dynamicDbFields,
+  updateMapping,
   isLoading,
-}) {
-  const updateMapping = (excelHeader, dbField) => {
-    setHeaderMapping((prev) => ({ ...prev, [excelHeader]: dbField }));
-  };
-
-  const filteredHeaders = showMappedOnly
-    ? excelHeaders.filter((h) => !headerMapping[h])
-    : excelHeaders;
+  applyMapping,
+  cardInfos,
+  getFilteredHeaders,
+}) => {
+  if (!showMapping) return null;
 
   return (
-    <div className="card mapping-section">
+    <div className="card mapping-section fade-in">
       <div className="card-content">
-        <h3 className="flex justify-between items-center">
-          <span className="flex items-center gap-2">
-            <Check size={24} /> Başlık Eşleme
-          </span>
+        <h3>
+          <div className="title-part">
+            <Check size={24} />
+            Başlık Eşleme
+          </div>
+
           <button
             onClick={() => setShowMappedOnly(!showMappedOnly)}
-            className="filter-button"
+            className={`filter-button ${showMappedOnly ? "active" : ""}`}
           >
             {showMappedOnly ? <EyeOff size={16} /> : <Eye size={16} />}
             {showMappedOnly ? "Tümünü Göster" : "Eşlenmeyenleri Göster"}
           </button>
         </h3>
 
-        <span data-tooltip-id="map-info" className="card-info-icon">
+        <span data-tooltip-id="mapping-info" className="card-info-icon">
           <Info size={18} />
         </span>
-        <Tooltip id="map-info">
-          📑 Başlıkları eşleyin. Boş bırakırsanız Excel başlığı ile kaydedilir.
+        <Tooltip
+          id="mapping-info"
+          place="right"
+          className="custom-tooltip"
+          effect="solid"
+        >
+          {cardInfos.mapping}
         </Tooltip>
 
-        <div className="mapping-grid">
-          {filteredHeaders.map((header) => (
-            <div
-              key={header}
-              className={`mapping-item ${
-                headerMapping[header] ? "mapped" : ""
-              }`}
-            >
-              <div className="mapping-item-header">
-                <span>📋 {header}</span>
-                {headerMapping[header] && <Check size={16} />}
-              </div>
-              <select
-                value={headerMapping[header] || ""}
-                onChange={(e) => updateMapping(header, e.target.value)}
-                disabled={isLoading}
-              >
-                <option value="">-- Excel başlığı ile kaydet --</option>
-                {Object.entries(dbFields).map(([key, label]) => (
-                  <option key={key} value={key}>
-                    {label} ({key})
-                  </option>
-                ))}
-              </select>
-            </div>
-          ))}
+        <div className="auto-mapping-info">
+          <p>
+            <strong>{Object.keys(headerMapping).length}</strong> adet otomatik
+            eşleme yapıldı! Eşlenmeyen alanlar Excel başlığı ile aynen
+            kaydedilecek.
+          </p>
         </div>
 
-        <button
-          onClick={applyMapping}
-          disabled={isLoading}
-          className="apply-mapping-button"
-        >
-          {isLoading ? "Uygulanıyor..." : "🔄 Eşlemeyi Uygula"}
-        </button>
+        <div className="mapping-grid">
+          {getFilteredHeaders().map((header) => {
+            const isMapped = !!headerMapping[header];
+            const mappedField = headerMapping[header];
+
+            return (
+              <div
+                key={header}
+                className={`mapping-item ${isMapped ? "mapped" : ""}`}
+              >
+                <div className="mapping-item-header">
+                  <span className="excel-header-name">📋 {header}</span>
+                  {isMapped && <Check size={16} />}
+                </div>
+
+                <select
+                  value={mappedField || ""}
+                  onChange={(e) => updateMapping(header, e.target.value)}
+                  disabled={isLoading}
+                  className={`mapping-select ${isMapped ? "mapped" : ""}`}
+                >
+                  <option value="">-- Excel başlığı ile kaydet --</option>
+                  {Object.entries(dynamicDbFields).map(([key, label]) => (
+                    <option key={key} value={key}>
+                      {label} ({key})
+                    </option>
+                  ))}
+                </select>
+
+                {!isMapped && (
+                  <div className="unmapped-info">
+                    📝 Bu alan "<strong>{header}</strong>" başlığı ile
+                    kaydedilecek
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="apply-mapping-container">
+          <button
+            onClick={applyMapping}
+            disabled={isLoading}
+            className="apply-mapping-button"
+          >
+            {isLoading ? "Uygulanıyor..." : "🔄 Eşlemeyi Uygula"}
+          </button>
+        </div>
       </div>
     </div>
   );
-}
+};
+
+export default MappingSection;

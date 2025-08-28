@@ -1,65 +1,124 @@
-export default function PreviewSection({
+import React from "react";
+import { Info } from "lucide-react";
+import { Tooltip } from "react-tooltip";
+
+const PreviewSection = ({
   jsonData,
   mappedData,
   viewMode,
   setViewMode,
-}) {
-  const dataToShow = mappedData.length > 0 ? mappedData : jsonData;
-  if (!dataToShow.length) return null;
+  cardInfos,
+}) => {
+  const renderTableView = () => {
+    const dataToShow = mappedData.length > 0 ? mappedData : jsonData;
+    if (!dataToShow.length) return null;
 
-  const firstSheet = dataToShow[0];
-  const sampleData = firstSheet.data.slice(0, 10);
-  const allColumns = Object.keys(sampleData[0] || {});
+    const firstSheet = dataToShow[0];
+    const sampleData = firstSheet.data.slice(0, 10);
+
+    if (!sampleData.length) return <p>Gösterilecek veri yok</p>;
+
+    const allColumns = Object.keys(sampleData[0] || {});
+
+    return (
+      <div className="preview-wrapper">
+        <div className="table-info-header">
+          <span>
+            📋 <strong>{firstSheet.sheetName}</strong> | Toplam:{" "}
+            <strong>{firstSheet.data.length}</strong> satır | Gösterilen:{" "}
+            <strong>{sampleData.length}</strong> satır
+          </span>
+        </div>
+
+        <div className="table-wrapper">
+          <table className="preview-table">
+            <thead>
+              <tr>
+                {allColumns.map((column, index) => (
+                  <th key={index}>{column}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {sampleData.map((row, rowIndex) => (
+                <tr key={rowIndex}>
+                  {allColumns.map((column, colIndex) => (
+                    <td key={colIndex}>
+                      {row[column] !== null && row[column] !== undefined
+                        ? typeof row[column] === "object"
+                          ? JSON.stringify(row[column])
+                          : String(row[column])
+                        : "-"}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {firstSheet.data.length > 10 && (
+          <div className="table-footer">
+            ... ve {firstSheet.data.length - 10} satır daha
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  if (jsonData.length === 0 && mappedData.length === 0) return null;
 
   return (
-    <div className="card preview-section">
+    <div className="card preview-section fade-in">
       <div className="card-content">
-        <h4 className="flex justify-between">
+        <h4>
           Veri Önizleme
           <div className="view-mode-buttons">
             <button
               onClick={() => setViewMode("table")}
-              className={viewMode === "table" ? "active" : ""}
+              className={`view-mode-button ${
+                viewMode === "table" ? "active" : ""
+              }`}
             >
               🗂️ Tablo
             </button>
             <button
               onClick={() => setViewMode("json")}
-              className={viewMode === "json" ? "active" : ""}
+              className={`view-mode-button ${
+                viewMode === "json" ? "active" : ""
+              }`}
             >
               📝 JSON
             </button>
           </div>
         </h4>
 
+        <span data-tooltip-id="preview-info" className="card-info-icon">
+          <Info size={18} />
+        </span>
+        <Tooltip
+          id="preview-info"
+          place="right"
+          className="custom-tooltip"
+          effect="solid"
+        >
+          {cardInfos.preview}
+        </Tooltip>
+
         {viewMode === "table" ? (
-          <div className="table-wrapper">
-            <table className="preview-table">
-              <thead>
-                <tr>
-                  {allColumns.map((col) => (
-                    <th key={col}>{col}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {sampleData.map((row, i) => (
-                  <tr key={i}>
-                    {allColumns.map((col) => (
-                      <td key={col}>{row[col] ?? "-"}</td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {firstSheet.data.length > 10 && (
-              <p>... ve {firstSheet.data.length - 10} satır daha</p>
-            )}
-          </div>
+          renderTableView()
         ) : (
-          <pre>{JSON.stringify(dataToShow, null, 2)}</pre>
+          <pre className="json-preview">
+            {JSON.stringify(
+              mappedData.length > 0 ? mappedData : jsonData,
+              null,
+              2
+            )}
+          </pre>
         )}
       </div>
     </div>
   );
-}
+};
+
+export default PreviewSection;
