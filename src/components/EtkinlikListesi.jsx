@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
 import axios from "axios";
 import Select from "react-select";
-import "./styles/events.css";
+import "./events.css";
 import Product from "./Product.jsx";
 import { FaSearch } from "react-icons/fa";
 import Modal from "./Modal.jsx";
@@ -9,12 +9,13 @@ import DateFilter from "./DateFilter.jsx";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
-import "./styles/product-select.css";
+import "./product-select.css";
 import ScrollToTop from "./scrollToTop.jsx";
 
 export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
   const [etkinlikler, setEtkinlikler] = useState([]);
   const [customFieldMapping, setCustomFieldMapping] = useState({});
+  const [excelFieldMapping, setExcelFieldMapping] = useState({}); // Excel'den gelen eşleşmeyen alanlar
   const [searchTerm, setSearchTerm] = useState("");
   const [activeModalUrl, setActiveModalUrl] = useState(null);
   const [startDate, setStartDate] = useState(null);
@@ -23,15 +24,7 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
   const [error, setError] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
 
-  // Son yüklenen batchId
-  const [lastBatchId, setLastBatchId] = useState(null);
-
-  // Dinamik başlıklar için yeni state
-  const [dynamicFields, setDynamicFields] = useState({});
-
-  const grafikRef = useRef(null);
-
-  // Görünürlük kontrolü
+  // Görünürlük kontrolü için state
   const [visibleFields, setVisibleFields] = useState([
     "ad",
     "tema",
@@ -43,6 +36,8 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
     "kalkinmaAraci",
   ]);
 
+  const grafikRef = useRef(null);
+
   // Sabit alanlar
   const staticFields = {
     ad: "Toplantının / Faaliyetin Adı",
@@ -53,7 +48,6 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
     katilimci: "Yurt Dışından Katılımcı Sayısı",
     katilimTur: "Katılım Türü",
     kaliteKulturu: "Kalite Kültürünü Yaygınlaştırma Amacı",
-    faaliyetKulturu: "Faaliyet Kültürü",
     duzenleyenBirim: "Düzenleyen Birim",
     faaliyetYurutucusu: "Faaliyet Yürütücüsü",
     kariyerMerkezi: "Kariyer Merkezi Faaliyeti",
@@ -65,156 +59,118 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
     url: "URL",
   };
 
-  // Backend'den mevcut başlıkları çek
-  useEffect(() => {
-    const fetchDynamicFields = async () => {
-      try {
-        const response = await axios.get(
-          "https://backend-mg22.onrender.com/api/etkinlikler/headers"
-        );
+  // 🔥 Verileri yükleme fonksiyonu
+  const loadEtkinlikler = async () => {
+    try {
+      setLoading(true);
+      const res = await axios.get(
+        "https://backend-mg22.onrender.com/api/etkinlikler"
+      );
+      const etkinlikVerisi = res.data.etkinlikler || res.data;
 
-        if (response.data.success && response.data.headers) {
-          // Sabit alanlarla başla
-          const combinedFields = { ...staticFields };
+      setEtkinlikler(etkinlikVerisi);
 
-          // Backend'den gelen başlıkları ekle (sabit olanlarda yoksa)
-          response.data.headers.forEach((header) => {
-            if (!staticFields[header]) {
-              // Dinamik başlıklar için güzel görünecek etiketler oluştur
-              const label = header
-                .replace(/([A-Z])/g, " $1")
-                .replace(/^./, (str) => str.toUpperCase())
-                .replace(/_/g, " ");
-              combinedFields[header] = label;
+      // CustomFields'ı dinamik olarak topla
+      const dynamicCustomFields = {};
+      const dynamicExcelFields = {};
+
+      etkinlikVerisi.forEach((etkinlik) => {
+        if (etkinlik.customFields) {
+          Object.entries(etkinlik.customFields).forEach(([key, value]) => {
+            if (typeof value === "object" && value.label) {
+              dynamicCustomFields[key] = value.label;
+            } else {
+              dynamicCustomFields[key] =
+                key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, " ");
             }
           });
-
-          setDynamicFields(combinedFields);
-        } else {
-          // Backend'den veri gelmezse sadece sabit fields kullan
-          setDynamicFields(staticFields);
         }
-      } catch (error) {
-        console.error("Dinamik başlıklar yüklenirken hata:", error);
-        // Hata durumunda sadece sabit fields kullan
-        setDynamicFields(staticFields);
-      }
-    };
 
-    fetchDynamicFields();
-  }, []);
-
-  // === useEffect: Etkinlikleri ve son batchId'yi çek ===
-  useEffect(() => {
-    // Etkinlikleri çek
-    axios
-      .get("https://backend-mg22.onrender.com/api/etkinlikler")
-      .then((res) => {
-        const etkinlikVerisi = res.data.etkinlikler || res.data;
-        setEtkinlikler(etkinlikVerisi);
-
-        const dynamicCustomFields = {};
-        etkinlikVerisi.forEach((etkinlik) => {
-          if (etkinlik.customFields) {
-            Object.entries(etkinlik.customFields).forEach(([key, value]) => {
-              if (typeof value === "object" && value.label) {
-                dynamicCustomFields[key] = value.label;
-              } else {
-                dynamicCustomFields[key] =
-                  key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, " ");
-              }
-            });
+        Object.keys(etkinlik).forEach((key) => {
+          if (
+            !staticFields[key] &&
+            key !== "id" &&
+            key !== "customFields" &&
+            key !== "extraData" &&
+            key !== "batchId"
+          ) {
+            dynamicExcelFields[key] = key;
           }
         });
-
-        setCustomFieldMapping(dynamicCustomFields);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Veri alınamadı", err);
-        setError("Veri alınamadı");
-        setLoading(false);
       });
 
-    // Son batchId'yi çek
-    axios
-      .get("https://backend-mg22.onrender.com/api/last-batch")
-      .then((res) => setLastBatchId(res.data.lastBatchId))
-      .catch((err) => console.error("BatchID alınamadı", err));
+      setCustomFieldMapping(dynamicCustomFields);
+      setExcelFieldMapping(dynamicExcelFields);
+      setLoading(false);
+    } catch (err) {
+      console.error("Veri alınamadı", err);
+      setError("Veri alınamadı");
+      setLoading(false);
+    }
+  };
+
+  // 🔥 Tek etkinlik silme fonksiyonu
+  const deleteEtkinlik = async (id, e) => {
+    e?.stopPropagation(); // Event bubbling'i durdur
+
+    // Kullanıcıdan onay al
+    if (!window.confirm("Bu etkinliği silmek istediğinizden emin misiniz?")) {
+      return;
+    }
+
+    try {
+      const response = await axios.delete(
+        `https://backend-mg22.onrender.com/api/etkinlikler/${id}`
+      );
+
+      if (response.data.success) {
+        // State'den silinen etkinliği kaldır (yeniden API çağrısı yapmadan)
+        setEtkinlikler((prevEtkinlikler) =>
+          prevEtkinlikler.filter((etkinlik) => etkinlik.id !== id)
+        );
+        console.log("Etkinlik başarıyla silindi");
+
+        // Başarı mesajı göster (opsiyonel)
+        setTimeout(() => setError(null), 3000);
+      }
+    } catch (error) {
+      console.error("Etkinlik silinirken hata:", error);
+      setError("Etkinlik silinirken bir hata oluştu");
+
+      // Hata mesajını 5 saniye sonra temizle
+      setTimeout(() => setError(null), 5000);
+    }
+  };
+
+  useEffect(() => {
+    loadEtkinlikler();
   }, []);
 
-  // === Son yüklenen batch'i silme ===
-  const handleDeleteLastBatch = () => {
-    if (!lastBatchId) return;
-
-    if (
-      window.confirm(
-        "Son yüklenen veriyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz."
-      )
-    ) {
-      axios
-        .delete(
-          `https://backend-mg22.onrender.com/api/etkinlikler/batch/${lastBatchId}`
-        )
-        .then((res) => {
-          alert(res.data.message);
-          // State'i güncelle
-          setEtkinlikler((prev) =>
-            prev.filter((e) => e.batchId !== lastBatchId)
-          );
-          setLastBatchId(null);
-        })
-        .catch((err) => {
-          console.error(err);
-          alert("Silme işlemi başarısız oldu.");
-        });
-    }
-  };
-
-  const handleDeleteProduct = (productId) => {
-    // Product'ı bulup adını al
-    const product = etkinlikler.find((e) => e.id === productId);
-    const productName = product ? product.ad : "Bilinmeyen Etkinlik";
-
-    const confirmDelete = window.confirm(
-      `Bu etkinliği silmek istediğinize emin misiniz?\nEtkinlik: ${productName}`
-    );
-
-    if (confirmDelete) {
-      axios
-        .delete(
-          `https://backend-mg22.onrender.com/api/etkinlikler/${productId}`
-        )
-        .then((res) => {
-          alert(res.data.message || `${productName} etkinliği silindi.`);
-          // State'i güncelle
-          setEtkinlikler((prev) => prev.filter((e) => e.id !== productId));
-        })
-        .catch((err) => {
-          console.error(err);
-          alert("Silme işlemi başarısız oldu.");
-        });
-    }
-  };
-  // Tüm alanları birleştir (artık dinamik alanlar dahil)
+  // Tüm alanları birleştir (statik + custom + excel)
   const allFields = useMemo(() => {
-    return { ...dynamicFields, ...customFieldMapping };
-  }, [dynamicFields, customFieldMapping]);
+    return { ...staticFields, ...customFieldMapping, ...excelFieldMapping };
+  }, [customFieldMapping, excelFieldMapping]);
 
-  const fieldOptions = useMemo(
-    () =>
-      Object.entries(allFields).map(([key, label]) => ({
+  // Select için options oluştur
+  const fieldOptions = useMemo(() => {
+    return Object.entries(allFields).map(([key, label]) => {
+      let group = "Sabit Alanlar";
+
+      if (customFieldMapping[key]) {
+        group = "Özel Alanlar";
+      } else if (excelFieldMapping[key]) {
+        group = "Excel Alanları";
+      }
+
+      return {
         value: key,
         label: `${label}`,
-        group: staticFields[key]
-          ? "Sabit Alanlar"
-          : key.startsWith("custom_")
-          ? "Özel Alanlar"
-          : "Dinamik Alanlar",
-      })),
-    [allFields]
-  );
+        group: group,
+      };
+    });
+  }, [allFields, customFieldMapping, excelFieldMapping]);
 
+  // Grouped options (react-select için)
   const groupedOptions = useMemo(() => {
     const grouped = fieldOptions.reduce((acc, option) => {
       const group = option.group;
@@ -236,7 +192,6 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
           value &&
           value.toString().toLowerCase().includes(searchTerm.toLowerCase())
       );
-
       const etkinlikTarihi = dayjs(product.baslama, "YYYY-MM-DD");
 
       const startValid = startDate
@@ -285,13 +240,20 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
     });
   }, [filteredProducts]);
 
-  const openModal = (url) => setActiveModalUrl(url);
-  const closeModal = () => setActiveModalUrl(null);
+  const openModal = (url) => {
+    setActiveModalUrl(url);
+  };
+
+  const closeModal = () => {
+    setActiveModalUrl(null);
+  };
+
   const clearDates = () => {
     setStartDate(null);
     setEndDate(null);
   };
 
+  // Görünürlük seçimi değiştiğinde
   const handleVisibilityChange = (selectedOptions) => {
     setVisibleFields(
       selectedOptions ? selectedOptions.map((opt) => opt.value) : []
@@ -301,7 +263,6 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
   return (
     <>
       <section id="event" ref={grafikRef}>
-        {/* Filtre ve arama */}
         <div className="filter-box">
           <div className="top-controls">
             <button
@@ -358,23 +319,8 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
                   onChange={handleVisibilityChange}
                   isSearchable
                   closeMenuOnSelect={false}
-                  menuPortalTarget={document.body}
-                  styles={{
-                    menuPortal: (base) => ({ ...base, zIndex: 9999 }),
-                  }}
                 />
               </div>
-            </div>
-          )}
-
-          {lastBatchId && (
-            <div className="delete-batch-div">
-              <button
-                className="toggle-filter-button"
-                onClick={handleDeleteLastBatch}
-              >
-                Son Yüklenen Veriyi Sil
-              </button>
             </div>
           )}
         </div>
@@ -397,10 +343,9 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
               <Product
                 {...product}
                 visibleFields={visibleFields}
-                customFieldMapping={customFieldMapping}
-                dynamicFieldMapping={dynamicFields} // Yeni prop eklendi
+                dynamicFieldMapping={allFields} // 🔥 Bu prop adı Product'ta dynamicFieldMapping
                 customFields={product.customFields}
-                onDelete={() => handleDeleteProduct(product.id, product.ad)}
+                onDelete={deleteEtkinlik} // 🔥 Silme fonksiyonunu Product'a geç
               />
             </li>
           ))}
