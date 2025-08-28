@@ -10,7 +10,7 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
 import "./styles/product-select.css";
-import ScrollToTop from "./scrollToTop.jsx";
+import ScrollToTop from "./ScrollToTop.jsx";
 
 export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
   const [etkinlikler, setEtkinlikler] = useState([]);
@@ -171,7 +171,13 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
     }
   };
 
-  const handleDeleteProduct = (productId) => {
+  // 🔥 Tek etkinlik silme fonksiyonu - DÜZELTME
+  const handleDeleteProduct = (productId, e) => {
+    // Event bubbling'i durdur (modal açılmasını engelle)
+    if (e) {
+      e.stopPropagation();
+    }
+
     // Product'ı bulup adını al
     const product = etkinlikler.find((e) => e.id === productId);
     const productName = product ? product.ad : "Bilinmeyen Etkinlik";
@@ -186,16 +192,25 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
           `https://backend-mg22.onrender.com/api/etkinlikler/${productId}`
         )
         .then((res) => {
-          alert(res.data.message || `${productName} etkinliği silindi.`);
-          // State'i güncelle
+          // Başarılı silme mesajı (alert yerine daha uygun bir yöntem)
+          console.log(res.data.message || `${productName} etkinliği silindi.`);
+
+          // State'i güncelle - sadece silinen etkinliği kaldır
           setEtkinlikler((prev) => prev.filter((e) => e.id !== productId));
+
+          // Geçici başarı mesajı göster
+          setError(null);
         })
         .catch((err) => {
-          console.error(err);
-          alert("Silme işlemi başarısız oldu.");
+          console.error("Silme hatası:", err);
+          setError("Etkinlik silinirken bir hata oluştu.");
+
+          // Hata mesajını 5 saniye sonra temizle
+          setTimeout(() => setError(null), 5000);
         });
     }
   };
+
   // Tüm alanları birleştir (artık dinamik alanlar dahil)
   const allFields = useMemo(() => {
     return { ...dynamicFields, ...customFieldMapping };
@@ -398,9 +413,9 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
                 {...product}
                 visibleFields={visibleFields}
                 customFieldMapping={customFieldMapping}
-                dynamicFieldMapping={dynamicFields} // Yeni prop eklendi
+                dynamicFieldMapping={dynamicFields}
                 customFields={product.customFields}
-                onDelete={() => handleDeleteProduct(product.id, product.ad)}
+                onDelete={handleDeleteProduct} // 🔥 DÜZELTME: Sadece fonksiyon referansı geç
               />
             </li>
           ))}
