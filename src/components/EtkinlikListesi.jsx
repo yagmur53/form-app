@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
 import axios from "axios";
 import Select from "react-select";
-import "./events.css";
+import "./styles/events.css";
 import Product from "./Product.jsx";
 import { FaSearch } from "react-icons/fa";
 import Modal from "./Modal.jsx";
