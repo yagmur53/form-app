@@ -4,7 +4,7 @@ import Select from "react-select";
 import ChartComponent from "./ChartComponent";
 import EtkinlikListesi from "./EtkinlikListesi";
 import "./styles/graphics.css";
-import ScrollToTop from "./scrollToTop";
+import ScrollToTop from "./ScrollToTop";
 
 const options = [
   { value: "ulusal", label: "Ulusal / Uluslararası" },
