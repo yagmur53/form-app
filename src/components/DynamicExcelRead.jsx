@@ -7,10 +7,16 @@ import SaveSection from "./DynamicExcelReader/SaveSection";
 import Notification from "./DynamicExcelReader/Notification";
 import LoadingOverlay from "./DynamicExcelReader/LoadingOverlay";
 
+import { Info } from "lucide-react";
+import { Tooltip } from "react-tooltip";
+import "react-tooltip/dist/react-tooltip.css";
+
 import * as XLSX from "xlsx";
 import { toast } from "react-toastify";
-import "./styles/excel-reader.css";
+import "react-toastify/dist/ReactToastify.css";
+
 import "./styles/upload-section.css";
+import "./styles/excel-reader.css";
 
 export default function DynamicExcelReader({ onDataSaved }) {
   const [jsonData, setJsonData] = useState([]);
