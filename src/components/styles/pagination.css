@@ -1,0 +1,116 @@
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  list-style: none;
+  padding: 0;
+  margin: 30px 0 20px;
+  font-family: "Sansation", sans-serif;
+}
+
+.pagination .page-item {
+  cursor: pointer;
+}
+
+.pagination .page-link {
+  padding: 10px 16px;
+  min-width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0d2640;
+  color: #dde6ed;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 15px;
+  border-radius: 8px;
+  border: 1px solid rgba(221, 230, 237, 0.1);
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.pagination .page-link:hover {
+  transform: translateY(-2px);
+  background: #1a3a5c;
+  color: #fff;
+  border-color: rgba(0, 180, 216, 0.3);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+}
+
+.pagination .active .page-link {
+  background: #00b4d8;
+  color: #fff;
+  border-color: #00b4d8;
+  box-shadow: 0 4px 15px rgba(0, 180, 216, 0.3);
+}
+
+.pagination .active .page-link:hover {
+  background: #0096c7;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 180, 216, 0.4);
+}
+
+/* Previous/Next butonları */
+.pagination .page-item:first-child .page-link,
+.pagination .page-item:last-child .page-link {
+  font-size: 16px;
+  font-weight: 600;
+  padding: 10px 18px;
+}
+
+/* Ellipsis stili */
+.pagination .page-item:has(.page-link:contains("...")) .page-link {
+  background: transparent;
+  box-shadow: none;
+  border: none;
+  color: #6b7280;
+  pointer-events: none;
+  font-weight: 600;
+  letter-spacing: 2px;
+}
+
+/* Disabled durumu */
+.pagination .disabled .page-link {
+  background: #1a202c;
+  color: #4a5568;
+  cursor: not-allowed;
+  pointer-events: none;
+  opacity: 0.5;
+  border-color: rgba(74, 85, 104, 0.2);
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .pagination {
+    gap: 8px;
+    margin: 25px 0 15px;
+  }
+
+  .pagination .page-link {
+    padding: 8px 12px;
+    min-width: 40px;
+    height: 40px;
+    font-size: 14px;
+  }
+
+  .pagination .page-item:first-child .page-link,
+  .pagination .page-item:last-child .page-link {
+    padding: 8px 14px;
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .pagination {
+    gap: 6px;
+  }
+
+  .pagination .page-link {
+    padding: 6px 10px;
+    min-width: 36px;
+    height: 36px;
+    font-size: 13px;
+  }
+}
