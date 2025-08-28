@@ -182,7 +182,7 @@ export default function Product({
               className="delete-button"
               onClick={(e) => {
                 e.stopPropagation();
-                onDelete(allProps.id, e);
+                onDelete(id, e);
               }}
             >
               <FaTimes />
