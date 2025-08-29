@@ -11,7 +11,8 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
 import "./styles/product-select.css";
 import ScrollToTop from "./ScrollToTop.jsx";
-import Pagination from "./Pagination.jsx"; // Pagination component
+import Pagination from "./Pagination.jsx";
+import "./styles/batch.css";
 
 export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
   const [etkinlikler, setEtkinlikler] = useState([]);
@@ -99,30 +100,37 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
     fetchDynamicFields();
   }, []);
 
-  // Batch'leri getir
-  useEffect(() => {
-    const fetchBatches = async () => {
-      try {
-        const response = await axios.get(
-          "https://backend-mg22.onrender.com/api/batches"
-        );
-        if (response.data.success) {
-          setAvailableBatches(response.data.batches);
-        }
-      } catch (error) {
-        console.error("Batch'ler yüklenirken hata:", error);
+  // Batch'leri getir fonksiyonu
+  const fetchBatches = async () => {
+    try {
+      const response = await axios.get(
+        "https://backend-mg22.onrender.com/api/batches"
+      );
+      if (response.data.success) {
+        setAvailableBatches(response.data.batches);
       }
-    };
+    } catch (error) {
+      console.error("Batch'ler yüklenirken hata:", error);
+    }
+  };
 
+  // Batch'leri ilk yüklemede getir
+  useEffect(() => {
     fetchBatches();
-  }, [etkinlikler]); // etkinlikler değiştiğinde yeniden yükle
+  }, []);
 
   // Etkinlikleri ve son batchId'yi çek
   useEffect(() => {
-    axios
-      .get("https://backend-mg22.onrender.com/api/etkinlikler")
-      .then((res) => {
-        const etkinlikVerisi = res.data.etkinlikler || res.data;
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+
+        // Etkinlikleri getir
+        const etkinlikResponse = await axios.get(
+          "https://backend-mg22.onrender.com/api/etkinlikler"
+        );
+        const etkinlikVerisi =
+          etkinlikResponse.data.etkinlikler || etkinlikResponse.data;
         setEtkinlikler(etkinlikVerisi);
 
         const dynamicCustomFields = {};
@@ -140,37 +148,85 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
         });
 
         setCustomFieldMapping(dynamicCustomFields);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Veri alınamadı", err);
-        setError("Veri alınamadı");
-        setLoading(false);
-      });
 
-    axios
-      .get("https://backend-mg22.onrender.com/api/last-batch")
-      .then((res) => setLastBatchId(res.data.lastBatchId))
-      .catch((err) => console.error("BatchID alınamadı", err));
+        // Son batch ID'yi getir
+        const batchResponse = await axios.get(
+          "https://backend-mg22.onrender.com/api/last-batch"
+        );
+        setLastBatchId(batchResponse.data.lastBatchId);
+
+        // Batch'leri yeniden getir
+        fetchBatches();
+
+        setLoading(false);
+      } catch (error) {
+        console.error("Veri yükleme hatası:", error);
+        setError("Veri yüklenirken hata oluştu");
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
-  const handleDeleteLastBatch = () => {
+  // FİX: handleDeleteProduct fonksiyonunu async/await ile güncelle
+  const handleDeleteProduct = async (productId, e) => {
+    if (e) e.stopPropagation();
+
+    const product = etkinlikler.find((e) => e.id === productId);
+    const productName = product ? product.ad : "Bilinmeyen Etkinlik";
+
+    if (
+      window.confirm(
+        `Bu etkinliği silmek istediğinize emin misiniz?\nEtkinlik: ${productName}`
+      )
+    ) {
+      try {
+        // API çağrısını await ile bekle
+        await axios.delete(
+          `https://backend-mg22.onrender.com/api/etkinlikler/${productId}`
+        );
+
+        // Başarılı olursa state'i güncelle
+        setEtkinlikler((prev) => prev.filter((e) => e.id !== productId));
+
+        // Batch'leri yeniden getir (eğer son kayıt silinmişse batch bilgisi değişebilir)
+        fetchBatches();
+      } catch (err) {
+        console.error("Silme hatası:", err);
+
+        // Hata mesajını daha detaylı göster
+        const errorMessage =
+          err.response?.data?.message || "Etkinlik silinirken bir hata oluştu.";
+        setError(errorMessage);
+        setTimeout(() => setError(null), 5000);
+      }
+    }
+  };
+
+  const handleDeleteLastBatch = async () => {
     if (!lastBatchId) return;
+
     if (
       window.confirm("Son yüklenen veriyi silmek istediğinizden emin misiniz?")
     ) {
-      axios
-        .delete(
+      try {
+        const response = await axios.delete(
           `https://backend-mg22.onrender.com/api/etkinlikler/batch/${lastBatchId}`
-        )
-        .then((res) => {
-          alert(res.data.message);
-          setEtkinlikler((prev) =>
-            prev.filter((e) => e.batchId !== lastBatchId)
-          );
-          setLastBatchId(null);
-        })
-        .catch(() => alert("Silme işlemi başarısız oldu."));
+        );
+
+        alert(response.data.message);
+
+        // State'leri güncelle
+        setEtkinlikler((prev) => prev.filter((e) => e.batchId !== lastBatchId));
+        setLastBatchId(null);
+
+        // Batch'leri yeniden getir
+        fetchBatches();
+      } catch (error) {
+        console.error("Batch silme hatası:", error);
+        alert("Silme işlemi başarısız oldu.");
+      }
     }
   };
 
@@ -185,7 +241,7 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
         );
         alert(response.data.message);
 
-        // State'i güncelle
+        // State'leri güncelle
         setEtkinlikler((prev) => prev.filter((e) => e.batchId !== batchId));
         setAvailableBatches((prev) =>
           prev.filter((b) => b.batchId !== batchId)
@@ -193,41 +249,21 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
 
         // Eğer silinen batch son batch ise lastBatchId'yi güncelle
         if (lastBatchId === batchId) {
+          const remainingBatches = availableBatches.filter(
+            (b) => b.batchId !== batchId
+          );
           setLastBatchId(
-            availableBatches.find((b) => b.batchId !== batchId)?.batchId || null
+            remainingBatches.length > 0 ? remainingBatches[0].batchId : null
           );
         }
 
         setShowBatchModal(false);
       } catch (error) {
-        alert("Silme işlemi başarısız oldu.");
         console.error("Silme hatası:", error);
+        const errorMessage =
+          error.response?.data?.message || "Silme işlemi başarısız oldu.";
+        alert(errorMessage);
       }
-    }
-  };
-
-  const handleDeleteProduct = (productId, e) => {
-    if (e) e.stopPropagation();
-    const product = etkinlikler.find((e) => e.id === productId);
-    const productName = product ? product.ad : "Bilinmeyen Etkinlik";
-
-    if (
-      window.confirm(
-        `Bu etkinliği silmek istediğinize emin misiniz?\nEtkinlik: ${productName}`
-      )
-    ) {
-      axios
-        .delete(
-          `https://backend-mg22.onrender.com/api/etkinlikler/${productId}`
-        )
-        .then(() =>
-          setEtkinlikler((prev) => prev.filter((e) => e.id !== productId))
-        )
-        .catch((err) => {
-          console.error("Silme hatası:", err);
-          setError("Etkinlik silinirken bir hata oluştu.");
-          setTimeout(() => setError(null), 5000);
-        });
     }
   };
 
@@ -375,26 +411,6 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
                   Temizle
                 </button>
               </div>
-              <div className="visibility-filter-container">
-                <label>Gösterilecek Alanlar:</label>
-                <Select
-                  className="my-select"
-                  classNamePrefix="my-select"
-                  isMulti
-                  placeholder="Gösterilecek alanları seçiniz"
-                  options={groupedOptions}
-                  value={fieldOptions.filter((opt) =>
-                    visibleFields.includes(opt.value)
-                  )}
-                  onChange={handleVisibilityChange}
-                  isSearchable
-                  closeMenuOnSelect={false}
-                  menuPortalTarget={document.body}
-                  styles={{
-                    menuPortal: (base) => ({ ...base, zIndex: 9999 }),
-                  }}
-                />
-              </div>
             </div>
           )}
 
@@ -404,13 +420,15 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
                 className="toggle-filter-button"
                 onClick={() => setShowBatchModal(true)}
               >
-                Yüklenen Verileri Yönet
+                Yüklenen Verileri Yönet ({availableBatches.length} batch)
               </button>
             </div>
           )}
         </div>
 
         {error && <div className="error-message">{error}</div>}
+
+        {loading && <div className="loading-message">Yükleniyor...</div>}
 
         {!loading && !error && (
           <div className="event-count">
