@@ -411,6 +411,26 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
                   Temizle
                 </button>
               </div>
+              <div className="visibility-filter-container">
+                <label>Gösterilecek Alanlar:</label>
+                <Select
+                  className="my-select"
+                  classNamePrefix="my-select"
+                  isMulti
+                  placeholder="Gösterilecek alanları seçiniz"
+                  options={groupedOptions}
+                  value={fieldOptions.filter((opt) =>
+                    visibleFields.includes(opt.value)
+                  )}
+                  onChange={handleVisibilityChange}
+                  isSearchable
+                  closeMenuOnSelect={false}
+                  menuPortalTarget={document.body}
+                  styles={{
+                    menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                  }}
+                />
+              </div>
             </div>
           )}
 
