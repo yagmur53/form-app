@@ -10,7 +10,7 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
 import "./styles/product-select.css";
-import ScrollToTop from "./ScrollToTop.jsx";
+import ScrollToTop from "./scrollToTop.jsx";
 
 export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
   const [etkinlikler, setEtkinlikler] = useState([]);
@@ -284,10 +284,6 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
                   onChange={handleVisibilityChange}
                   isSearchable
                   closeMenuOnSelect={false}
-                  menuPortalTarget={document.body}
-                  styles={{
-                    menuPortal: (base) => ({ ...base, zIndex: 9999 }),
-                  }}
                 />
               </div>
             </div>
