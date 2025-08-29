@@ -10,13 +10,12 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
 import "./styles/product-select.css";
-import ScrollToTop from "./ScrollToTop.jsx";
-import Pagination from "./Pagination.jsx"; // Pagination component
-import "./styles/batch.css";
+import ScrollToTop from "./scrollToTop.jsx";
 
 export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
   const [etkinlikler, setEtkinlikler] = useState([]);
   const [customFieldMapping, setCustomFieldMapping] = useState({});
+  const [excelFieldMapping, setExcelFieldMapping] = useState({}); // Excel'den gelen eşleşmeyen alanlar
   const [searchTerm, setSearchTerm] = useState("");
   const [activeModalUrl, setActiveModalUrl] = useState(null);
   const [startDate, setStartDate] = useState(null);
@@ -24,9 +23,8 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
-  const [lastBatchId, setLastBatchId] = useState(null);
-  const [dynamicFields, setDynamicFields] = useState({});
-  const grafikRef = useRef(null);
+
+  // Görünürlük kontrolü için state
   const [visibleFields, setVisibleFields] = useState([
     "ad",
     "tema",
@@ -38,14 +36,9 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
     "kalkinmaAraci",
   ]);
 
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(0);
-  const itemsPerPage = 15;
+  const grafikRef = useRef(null);
 
-  // Batch yönetimi için state'ler
-  const [availableBatches, setAvailableBatches] = useState([]);
-  const [showBatchModal, setShowBatchModal] = useState(false);
-
+  // Sabit alanlar
   const staticFields = {
     ad: "Toplantının / Faaliyetin Adı",
     ulusal: "Ulusal / Uluslararası",
@@ -55,7 +48,6 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
     katilimci: "Yurt Dışından Katılımcı Sayısı",
     katilimTur: "Katılım Türü",
     kaliteKulturu: "Kalite Kültürünü Yaygınlaştırma Amacı",
-    faaliyetKulturu: "Faaliyet Kültürü",
     duzenleyenBirim: "Düzenleyen Birim",
     faaliyetYurutucusu: "Faaliyet Yürütücüsü",
     kariyerMerkezi: "Kariyer Merkezi Faaliyeti",
@@ -67,67 +59,20 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
     url: "URL",
   };
 
-  // Dinamik alanları backend'den çek
-  useEffect(() => {
-    const fetchDynamicFields = async () => {
-      try {
-        const response = await axios.get(
-          "https://backend-mg22.onrender.com/api/etkinlikler/headers"
-        );
-
-        if (response.data.success && response.data.headers) {
-          const combinedFields = { ...staticFields };
-          response.data.headers.forEach((header) => {
-            if (!staticFields[header]) {
-              const label = header
-                .replace(/([A-Z])/g, " $1")
-                .replace(/^./, (str) => str.toUpperCase())
-                .replace(/_/g, " ");
-              combinedFields[header] = label;
-            }
-          });
-
-          setDynamicFields(combinedFields);
-        } else {
-          setDynamicFields(staticFields);
-        }
-      } catch (error) {
-        console.error("Dinamik başlıklar yüklenirken hata:", error);
-        setDynamicFields(staticFields);
-      }
-    };
-
-    fetchDynamicFields();
-  }, []);
-
-  // Batch'leri getir
-  useEffect(() => {
-    const fetchBatches = async () => {
-      try {
-        const response = await axios.get(
-          "https://backend-mg22.onrender.com/api/batches"
-        );
-        if (response.data.success) {
-          setAvailableBatches(response.data.batches);
-        }
-      } catch (error) {
-        console.error("Batch'ler yüklenirken hata:", error);
-      }
-    };
-
-    fetchBatches();
-  }, [etkinlikler]); // etkinlikler değiştiğinde yeniden yükle
-
-  // Etkinlikleri ve son batchId'yi çek
   useEffect(() => {
     axios
       .get("https://backend-mg22.onrender.com/api/etkinlikler")
       .then((res) => {
         const etkinlikVerisi = res.data.etkinlikler || res.data;
+
         setEtkinlikler(etkinlikVerisi);
 
+        // 🔥 CustomFields'ı dinamik olarak topla
         const dynamicCustomFields = {};
+        const dynamicExcelFields = {}; // Excel'den gelen eşleşmeyen alanlar
+
         etkinlikVerisi.forEach((etkinlik) => {
+          // CustomFields'ı kontrol et (eski sistem)
           if (etkinlik.customFields) {
             Object.entries(etkinlik.customFields).forEach(([key, value]) => {
               if (typeof value === "object" && value.label) {
@@ -138,9 +83,25 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
               }
             });
           }
+
+          // Excel'den gelen eşleşmeyen alanları topla (yeni sistem)
+          Object.keys(etkinlik).forEach((key) => {
+            // Sabit alanlar, id, customFields ve extraData değilse
+            if (
+              !staticFields[key] &&
+              key !== "id" &&
+              key !== "customFields" &&
+              key !== "extraData" &&
+              key !== "batchId"
+            ) {
+              // Excel başlığını aynen kullan
+              dynamicExcelFields[key] = key;
+            }
+          });
         });
 
         setCustomFieldMapping(dynamicCustomFields);
+        setExcelFieldMapping(dynamicExcelFields);
         setLoading(false);
       })
       .catch((err) => {
@@ -148,109 +109,33 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
         setError("Veri alınamadı");
         setLoading(false);
       });
-
-    axios
-      .get("https://backend-mg22.onrender.com/api/last-batch")
-      .then((res) => setLastBatchId(res.data.lastBatchId))
-      .catch((err) => console.error("BatchID alınamadı", err));
   }, []);
 
-  const handleDeleteLastBatch = () => {
-    if (!lastBatchId) return;
-    if (
-      window.confirm("Son yüklenen veriyi silmek istediğinizden emin misiniz?")
-    ) {
-      axios
-        .delete(
-          `https://backend-mg22.onrender.com/api/etkinlikler/batch/${lastBatchId}`
-        )
-        .then((res) => {
-          alert(res.data.message);
-          setEtkinlikler((prev) =>
-            prev.filter((e) => e.batchId !== lastBatchId)
-          );
-          setLastBatchId(null);
-        })
-        .catch(() => alert("Silme işlemi başarısız oldu."));
-    }
-  };
+  // Tüm alanları birleştir (statik + custom + excel)
+  const allFields = useMemo(() => {
+    return { ...staticFields, ...customFieldMapping, ...excelFieldMapping };
+  }, [customFieldMapping, excelFieldMapping]);
 
-  // Seçilen batch'i sil
-  const handleDeleteBatch = async (batchId, recordCount) => {
-    const confirmMessage = `Bu batch'i silmek istediğinize emin misiniz?\n${recordCount} kayıt silinecek.`;
+  // Select için options oluştur
+  const fieldOptions = useMemo(() => {
+    return Object.entries(allFields).map(([key, label]) => {
+      let group = "Sabit Alanlar";
 
-    if (window.confirm(confirmMessage)) {
-      try {
-        const response = await axios.delete(
-          `https://backend-mg22.onrender.com/api/etkinlikler/batch/${batchId}`
-        );
-        alert(response.data.message);
-
-        // State'i güncelle
-        setEtkinlikler((prev) => prev.filter((e) => e.batchId !== batchId));
-        setAvailableBatches((prev) =>
-          prev.filter((b) => b.batchId !== batchId)
-        );
-
-        // Eğer silinen batch son batch ise lastBatchId'yi güncelle
-        if (lastBatchId === batchId) {
-          setLastBatchId(
-            availableBatches.find((b) => b.batchId !== batchId)?.batchId || null
-          );
-        }
-
-        setShowBatchModal(false);
-      } catch (error) {
-        alert("Silme işlemi başarısız oldu.");
-        console.error("Silme hatası:", error);
+      if (customFieldMapping[key]) {
+        group = "Özel Alanlar";
+      } else if (excelFieldMapping[key]) {
+        group = "Excel Alanları";
       }
-    }
-  };
 
-  const handleDeleteProduct = (productId, e) => {
-    if (e) e.stopPropagation();
-    const product = etkinlikler.find((e) => e.id === productId);
-    const productName = product ? product.ad : "Bilinmeyen Etkinlik";
-
-    if (
-      window.confirm(
-        `Bu etkinliği silmek istediğinize emin misiniz?\nEtkinlik: ${productName}`
-      )
-    ) {
-      axios
-        .delete(
-          `https://backend-mg22.onrender.com/api/etkinlikler/${productId}`
-        )
-        .then(() =>
-          setEtkinlikler((prev) => prev.filter((e) => e.id !== productId))
-        )
-        .catch((err) => {
-          console.error("Silme hatası:", err);
-          setError("Etkinlik silinirken bir hata oluştu.");
-          setTimeout(() => setError(null), 5000);
-        });
-    }
-  };
-
-  const allFields = useMemo(
-    () => ({ ...dynamicFields, ...customFieldMapping }),
-    [dynamicFields, customFieldMapping]
-  );
-
-  const fieldOptions = useMemo(
-    () =>
-      Object.entries(allFields).map(([key, label]) => ({
+      return {
         value: key,
-        label: label,
-        group: staticFields[key]
-          ? "Sabit Alanlar"
-          : key.startsWith("custom_")
-          ? "Özel Alanlar"
-          : "Dinamik Alanlar",
-      })),
-    [allFields]
-  );
+        label: `${label}`,
+        group: group,
+      };
+    });
+  }, [allFields, customFieldMapping, excelFieldMapping]);
 
+  // Grouped options (react-select için)
   const groupedOptions = useMemo(() => {
     const grouped = fieldOptions.reduce((acc, option) => {
       const group = option.group;
@@ -258,6 +143,7 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
       acc[group].push(option);
       return acc;
     }, {});
+
     return Object.entries(grouped).map(([label, options]) => ({
       label,
       options,
@@ -271,12 +157,13 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
           value &&
           value.toString().toLowerCase().includes(searchTerm.toLowerCase())
       );
-
       const etkinlikTarihi = dayjs(product.baslama, "YYYY-MM-DD");
+
       const startValid = startDate
         ? etkinlikTarihi.isSame(startDate, "day") ||
           etkinlikTarihi.isAfter(startDate, "day")
         : true;
+
       const endValid = endDate
         ? etkinlikTarihi.isSame(endDate, "day") ||
           etkinlikTarihi.isBefore(endDate, "day")
@@ -286,7 +173,9 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
         selectedCategory && selectedLegend
           ? (() => {
               const field = product[selectedCategory];
-              if (Array.isArray(field)) return field.includes(selectedLegend);
+              if (Array.isArray(field)) {
+                return field.includes(selectedLegend);
+              }
               return field === selectedLegend;
             })()
           : true;
@@ -308,26 +197,28 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
     return [...filteredProducts].sort((a, b) => {
       const aDate = dayjs(a.baslama, "YYYY-MM-DD");
       const bDate = dayjs(b.baslama, "YYYY-MM-DD");
-      return Math.abs(aDate.diff(today)) - Math.abs(bDate.diff(today));
+
+      const aDiff = Math.abs(aDate.diff(today));
+      const bDiff = Math.abs(bDate.diff(today));
+
+      return aDiff - bDiff;
     });
   }, [filteredProducts]);
 
-  // Pagination logic
-  const offset = currentPage * itemsPerPage;
-  const currentProducts = displayedProducts.slice(
-    offset,
-    offset + itemsPerPage
-  );
-  const pageCount = Math.ceil(displayedProducts.length / itemsPerPage);
-  const handlePageClick = ({ selected }) => setCurrentPage(selected);
+  const openModal = (url) => {
+    setActiveModalUrl(url);
+  };
 
-  const openModal = (url) => setActiveModalUrl(url);
-  const closeModal = () => setActiveModalUrl(null);
+  const closeModal = () => {
+    setActiveModalUrl(null);
+  };
+
   const clearDates = () => {
     setStartDate(null);
     setEndDate(null);
   };
 
+  // Görünürlük seçimi değiştiğinde
   const handleVisibilityChange = (selectedOptions) => {
     setVisibleFields(
       selectedOptions ? selectedOptions.map((opt) => opt.value) : []
@@ -345,6 +236,7 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
             >
               {showFilters ? "Filtreyi Gizle" : "Filtrele"}
             </button>
+
             <div className="search-container">
               <FaSearch className="search-icon" />
               <input
@@ -364,29 +256,40 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
                   <DateFilter
                     dateName="Başlangıç"
                     value={startDate}
-                    onChange={setStartDate}
+                    onChange={(newValue) => setStartDate(newValue)}
                   />
                   <DateFilter
                     dateName="Bitiş"
                     value={endDate}
-                    onChange={setEndDate}
+                    onChange={(newValue) => setEndDate(newValue)}
                   />
                 </LocalizationProvider>
                 <button className="clear-dates-button" onClick={clearDates}>
                   Temizle
                 </button>
               </div>
-            </div>
-          )}
 
-          {availableBatches.length > 0 && (
-            <div className="delete-batch-div">
-              <button
-                className="toggle-filter-button"
-                onClick={() => setShowBatchModal(true)}
-              >
-                Yüklenen Verileri Yönet ({availableBatches.length} batch)
-              </button>
+              {/* Alan Görünürlük Seçimi */}
+              <div className="visibility-filter-container">
+                <label>Gösterilecek Alanlar:</label>
+                <Select
+                  className="my-select"
+                  classNamePrefix="my-select"
+                  isMulti
+                  placeholder="Gösterilecek alanları seçiniz"
+                  options={groupedOptions}
+                  value={fieldOptions.filter((opt) =>
+                    visibleFields.includes(opt.value)
+                  )}
+                  onChange={handleVisibilityChange}
+                  isSearchable
+                  closeMenuOnSelect={false}
+                  menuPortalTarget={document.body}
+                  styles={{
+                    menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                  }}
+                />
+              </div>
             </div>
           )}
         </div>
@@ -404,82 +307,20 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
         )}
 
         <ul id="products">
-          {currentProducts.map((product) => (
+          {displayedProducts.map((product) => (
             <li key={product.id} onClick={() => openModal(product.url)}>
               <Product
                 {...product}
                 visibleFields={visibleFields}
-                customFieldMapping={customFieldMapping}
-                dynamicFieldMapping={dynamicFields}
+                allFieldMapping={allFields}
                 customFields={product.customFields}
-                onDelete={handleDeleteProduct}
               />
             </li>
           ))}
         </ul>
 
-        {pageCount > 1 && (
-          <Pagination pageCount={pageCount} onPageChange={handlePageClick} />
-        )}
-
         {activeModalUrl && <Modal url={activeModalUrl} onClose={closeModal} />}
-
-        {/* Batch Modal */}
-        {showBatchModal && (
-          <div
-            className="batch-modal-overlay"
-            onClick={() => setShowBatchModal(false)}
-          >
-            <div
-              className="batch-modal-content"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3>Yüklenen Batch'ler</h3>
-              <div className="batch-list">
-                {availableBatches.map((batch, index) => (
-                  <div key={batch.batchId} className="batch-item">
-                    <div className="batch-info">
-                      <span className="batch-date">
-                        {new Date(batch.uploadDate).toLocaleDateString(
-                          "tr-TR",
-                          {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          }
-                        )}
-                      </span>
-                      <span className="batch-count">
-                        {batch.recordCount} kayıt
-                      </span>
-                      {index === 0 && (
-                        <span className="batch-latest">Son Yüklenen</span>
-                      )}
-                    </div>
-                    <button
-                      className="batch-delete-btn"
-                      onClick={() =>
-                        handleDeleteBatch(batch.batchId, batch.recordCount)
-                      }
-                    >
-                      Sil
-                    </button>
-                  </div>
-                ))}
-              </div>
-              <button
-                className="batch-modal-close"
-                onClick={() => setShowBatchModal(false)}
-              >
-                Kapat
-              </button>
-            </div>
-          </div>
-        )}
       </section>
-
       <ScrollToTop scrollTargetRef={grafikRef} />
     </>
   );
