@@ -420,7 +420,7 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
                 className="toggle-filter-button"
                 onClick={() => setShowBatchModal(true)}
               >
-                Yüklenen Verileri Yönet ({availableBatches.length} batch)
+                Son Yüklenen Veriler
               </button>
             </div>
           )}
