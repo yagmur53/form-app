@@ -41,10 +41,6 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
   const [currentPage, setCurrentPage] = useState(0);
   const itemsPerPage = 15;
 
-  // Batch yönetimi için state'ler
-  const [availableBatches, setAvailableBatches] = useState([]);
-  const [showBatchModal, setShowBatchModal] = useState(false);
-
   const staticFields = {
     ad: "Toplantının / Faaliyetin Adı",
     ulusal: "Ulusal / Uluslararası",
@@ -66,7 +62,7 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
     url: "URL",
   };
 
-  // Dinamik alanları backend'den çek
+  // Dinamik alanları backend’den çek
   useEffect(() => {
     const fetchDynamicFields = async () => {
       try {
@@ -99,25 +95,7 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
     fetchDynamicFields();
   }, []);
 
-  // Batch'leri getir
-  useEffect(() => {
-    const fetchBatches = async () => {
-      try {
-        const response = await axios.get(
-          "https://backend-mg22.onrender.com/api/batches"
-        );
-        if (response.data.success) {
-          setAvailableBatches(response.data.batches);
-        }
-      } catch (error) {
-        console.error("Batch'ler yüklenirken hata:", error);
-      }
-    };
-
-    fetchBatches();
-  }, [etkinlikler]); // etkinlikler değiştiğinde yeniden yükle
-
-  // Etkinlikleri ve son batchId'yi çek
+  // Etkinlikleri ve son batchId’yi çek
   useEffect(() => {
     axios
       .get("https://backend-mg22.onrender.com/api/etkinlikler")
@@ -171,38 +149,6 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
           setLastBatchId(null);
         })
         .catch(() => alert("Silme işlemi başarısız oldu."));
-    }
-  };
-
-  // Seçilen batch'i sil
-  const handleDeleteBatch = async (batchId, recordCount) => {
-    const confirmMessage = `Bu batch'i silmek istediğinize emin misiniz?\n${recordCount} kayıt silinecek.`;
-
-    if (window.confirm(confirmMessage)) {
-      try {
-        const response = await axios.delete(
-          `https://backend-mg22.onrender.com/api/etkinlikler/batch/${batchId}`
-        );
-        alert(response.data.message);
-
-        // State'i güncelle
-        setEtkinlikler((prev) => prev.filter((e) => e.batchId !== batchId));
-        setAvailableBatches((prev) =>
-          prev.filter((b) => b.batchId !== batchId)
-        );
-
-        // Eğer silinen batch son batch ise lastBatchId'yi güncelle
-        if (lastBatchId === batchId) {
-          setLastBatchId(
-            availableBatches.find((b) => b.batchId !== batchId)?.batchId || null
-          );
-        }
-
-        setShowBatchModal(false);
-      } catch (error) {
-        alert("Silme işlemi başarısız oldu.");
-        console.error("Silme hatası:", error);
-      }
     }
   };
 
@@ -375,36 +321,16 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
                   Temizle
                 </button>
               </div>
-              <div className="visibility-filter-container">
-                <label>Gösterilecek Alanlar:</label>
-                <Select
-                  className="my-select"
-                  classNamePrefix="my-select"
-                  isMulti
-                  placeholder="Gösterilecek alanları seçiniz"
-                  options={groupedOptions}
-                  value={fieldOptions.filter((opt) =>
-                    visibleFields.includes(opt.value)
-                  )}
-                  onChange={handleVisibilityChange}
-                  isSearchable
-                  closeMenuOnSelect={false}
-                  menuPortalTarget={document.body}
-                  styles={{
-                    menuPortal: (base) => ({ ...base, zIndex: 9999 }),
-                  }}
-                />
-              </div>
             </div>
           )}
 
-          {availableBatches.length > 0 && (
+          {lastBatchId && (
             <div className="delete-batch-div">
               <button
                 className="toggle-filter-button"
-                onClick={() => setShowBatchModal(true)}
+                onClick={handleDeleteLastBatch}
               >
-                Yüklenen Verileri Yönet
+                Son Yüklenen Veriyi Sil
               </button>
             </div>
           )}
@@ -442,61 +368,6 @@ export default function EtkinlikListesi({ selectedCategory, selectedLegend }) {
         )}
 
         {activeModalUrl && <Modal url={activeModalUrl} onClose={closeModal} />}
-
-        {/* Batch Modal */}
-        {showBatchModal && (
-          <div
-            className="batch-modal-overlay"
-            onClick={() => setShowBatchModal(false)}
-          >
-            <div
-              className="batch-modal-content"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3>Yüklenen Batch'ler</h3>
-              <div className="batch-list">
-                {availableBatches.map((batch, index) => (
-                  <div key={batch.batchId} className="batch-item">
-                    <div className="batch-info">
-                      <span className="batch-date">
-                        {new Date(batch.uploadDate).toLocaleDateString(
-                          "tr-TR",
-                          {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          }
-                        )}
-                      </span>
-                      <span className="batch-count">
-                        {batch.recordCount} kayıt
-                      </span>
-                      {index === 0 && (
-                        <span className="batch-latest">Son Yüklenen</span>
-                      )}
-                    </div>
-                    <button
-                      className="batch-delete-btn"
-                      onClick={() =>
-                        handleDeleteBatch(batch.batchId, batch.recordCount)
-                      }
-                    >
-                      Sil
-                    </button>
-                  </div>
-                ))}
-              </div>
-              <button
-                className="batch-modal-close"
-                onClick={() => setShowBatchModal(false)}
-              >
-                Kapat
-              </button>
-            </div>
-          </div>
-        )}
       </section>
 
       <ScrollToTop scrollTargetRef={grafikRef} />
